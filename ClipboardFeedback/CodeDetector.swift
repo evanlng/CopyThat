@@ -35,6 +35,26 @@ enum CodeLanguage: String, CaseIterable, Equatable, Hashable, Identifiable {
 struct CodeDetector {
     private static let analysisLimit = 20_000
 
+    private enum Pattern {
+        static let htmlTag = regex(#"</?[a-z][^>]*>"#)
+        static let pythonDeclaration = regex(#"(?m)^\s*(def|class)\s+[A-Za-z_]\w*"#)
+        static let pythonImport = regex(#"(?m)^\s*(from\s+\S+\s+import|import\s+\S+)"#)
+        static let swiftImport = regex(#"(?m)^\s*import\s+(SwiftUI|Foundation|AppKit)"#)
+        static let swiftDeclaration = regex(#"\b(func|struct|enum|protocol|extension)\s+[A-Za-z_]\w*"#)
+        static let swiftBinding = regex(#"\b(let|var)\s+[A-Za-z_]\w*\s*(?::|=)"#)
+        static let javaScriptBinding = regex(#"\b(const|let|var)\s+[A-Za-z_$][\w$]*\s*="#)
+        static let javaScriptFunction = regex(#"\bfunction\s+[A-Za-z_$][\w$]*\s*\("#)
+        static let javaScriptImport = regex(#"\b(import|export)\s+(default\s+)?"#)
+        static let cssSelector = regex(#"(?m)^\s*([.#][A-Za-z_-][\w-]*|[A-Za-z][\w-]*)[^=\n]*\{"#)
+        static let bashCommand = regex(#"(?m)^\s*(echo|printf|cd|export|source|curl|grep|sed|awk)\b"#)
+        static let bashVariable = regex(#"\$[A-Za-z_]\w*"#)
+        static let bashControl = regex(#"(?m)^\s*(if|for|while)\b.*;?\s*(then|do)?\s*$"#)
+
+        private static func regex(_ pattern: String) -> NSRegularExpression {
+            try! NSRegularExpression(pattern: pattern)
+        }
+    }
+
     func detectLanguage(in source: String) -> CodeLanguage? {
         let sample = String(source.prefix(Self.analysisLimit))
         let trimmed = sample.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -57,7 +77,7 @@ struct CodeDetector {
             scores[.html, default: 0] += 6
         }
         if lowercased.contains("<"), lowercased.contains(">"),
-           containsRegex(#"</?[a-z][^>]*>"#, in: lowercased) {
+           containsRegex(Pattern.htmlTag, in: lowercased) {
             scores[.html, default: 0] += 3
         }
         if lowercased.contains("</") {
@@ -65,11 +85,11 @@ struct CodeDetector {
         }
 
         if (lowercased.contains("def ") || lowercased.contains("class ")),
-           containsRegex(#"(?m)^\s*(def|class)\s+[A-Za-z_]\w*"#, in: trimmed) {
+           containsRegex(Pattern.pythonDeclaration, in: trimmed) {
             scores[.python, default: 0] += 5
         }
         if (lowercased.contains("import ") || lowercased.contains("from ")),
-           containsRegex(#"(?m)^\s*(from\s+\S+\s+import|import\s+\S+)"#, in: trimmed) {
+           containsRegex(Pattern.pythonImport, in: trimmed) {
             scores[.python, default: 0] += 2
         }
         if lowercased.contains("if __name__ ==") {
@@ -85,16 +105,16 @@ struct CodeDetector {
         }
 
         if trimmed.contains("import "),
-           containsRegex(#"(?m)^\s*import\s+(SwiftUI|Foundation|AppKit)"#, in: trimmed) {
+           containsRegex(Pattern.swiftImport, in: trimmed) {
             scores[.swift, default: 0] += 4
         }
         if ["func ", "struct ", "enum ", "protocol ", "extension "]
             .contains(where: trimmed.contains),
-           containsRegex(#"\b(func|struct|enum|protocol|extension)\s+[A-Za-z_]\w*"#, in: trimmed) {
+           containsRegex(Pattern.swiftDeclaration, in: trimmed) {
             scores[.swift, default: 0] += 4
         }
         if (trimmed.contains("let ") || trimmed.contains("var ")),
-           containsRegex(#"\b(let|var)\s+[A-Za-z_]\w*\s*(?::|=)"#, in: trimmed) {
+           containsRegex(Pattern.swiftBinding, in: trimmed) {
             scores[.swift, default: 0] += 1
         }
         if lowercased.contains("@main") || lowercased.contains("some view") {
@@ -103,11 +123,11 @@ struct CodeDetector {
 
         if trimmed.contains("="),
            (trimmed.contains("const ") || trimmed.contains("let ") || trimmed.contains("var ")),
-           containsRegex(#"\b(const|let|var)\s+[A-Za-z_$][\w$]*\s*="#, in: trimmed) {
+           containsRegex(Pattern.javaScriptBinding, in: trimmed) {
             scores[.javaScript, default: 0] += 2
         }
         if lowercased.contains("function "),
-           containsRegex(#"\bfunction\s+[A-Za-z_$][\w$]*\s*\("#, in: trimmed) {
+           containsRegex(Pattern.javaScriptFunction, in: trimmed) {
             scores[.javaScript, default: 0] += 4
         }
         if trimmed.contains("=>") {
@@ -117,7 +137,7 @@ struct CodeDetector {
             scores[.javaScript, default: 0] += 2
         }
         if (lowercased.contains("import ") || lowercased.contains("export ")),
-           containsRegex(#"\b(import|export)\s+(default\s+)?"#, in: trimmed) {
+           containsRegex(Pattern.javaScriptImport, in: trimmed) {
             scores[.javaScript, default: 0] += 2
         }
 
@@ -127,7 +147,7 @@ struct CodeDetector {
         ]
         scores[.css, default: 0] += cssProperties.filter(lowercased.contains).count * 2
         if trimmed.contains("{"),
-           containsRegex(#"(?m)^\s*([.#][A-Za-z_-][\w-]*|[A-Za-z][\w-]*)[^=\n]*\{"#, in: trimmed) {
+           containsRegex(Pattern.cssSelector, in: trimmed) {
             scores[.css, default: 0] += 3
         }
         if lowercased.contains("@media") || lowercased.contains("@keyframes") {
@@ -151,15 +171,15 @@ struct CodeDetector {
         }
         if ["echo ", "printf ", "cd ", "export ", "source ", "curl ", "grep ", "sed ", "awk "]
             .contains(where: lowercased.contains),
-           containsRegex(#"(?m)^\s*(echo|printf|cd|export|source|curl|grep|sed|awk)\b"#, in: lowercased) {
+           containsRegex(Pattern.bashCommand, in: lowercased) {
             scores[.bash, default: 0] += 3
         }
         if lowercased.contains("${")
-            || (trimmed.contains("$") && containsRegex(#"\$[A-Za-z_]\w*"#, in: trimmed)) {
+            || (trimmed.contains("$") && containsRegex(Pattern.bashVariable, in: trimmed)) {
             scores[.bash, default: 0] += 2
         }
         if (lowercased.contains("if ") || lowercased.contains("for ") || lowercased.contains("while ")),
-           containsRegex(#"(?m)^\s*(if|for|while)\b.*;?\s*(then|do)?\s*$"#, in: lowercased) {
+           containsRegex(Pattern.bashControl, in: lowercased) {
             scores[.bash, default: 0] += 2
         }
 
@@ -197,7 +217,11 @@ struct CodeDetector {
         return (try? JSONSerialization.jsonObject(with: data)) != nil
     }
 
-    private func containsRegex(_ pattern: String, in text: String) -> Bool {
-        text.range(of: pattern, options: .regularExpression) != nil
+    private func containsRegex(
+        _ expression: NSRegularExpression,
+        in text: String
+    ) -> Bool {
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return expression.firstMatch(in: text, range: range) != nil
     }
 }

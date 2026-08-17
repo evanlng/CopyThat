@@ -1,4 +1,4 @@
-# CopyThat（牛马）2.2.0
+# CopyThat（牛马）2.2.1
 
 ![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
@@ -114,14 +114,17 @@ Developer ID 签名和 Apple 公证。
 ### 性能与隐私设计
 
 - `ClipboardMonitor` 只检查 `NSPasteboard.changeCount`，正常间隔为 250 ms；
-  复制后短时间切换为 80 ms，并在 2.4 秒后恢复。
+  复制后短时间切换为 60 ms，并在 0.9 秒后恢复，快速连续复制更灵敏，同时将突发轮询次数减半。
 - Timer tolerance 允许 macOS 合并唤醒；暂停反馈时计时器会完全停止。
 - 只有剪贴板变化后才进行一次有界分析，不持续处理内容。
+- Finder 文件类型会先做常数时间预检，普通文字复制不再尝试读取文件对象。
+- 代码识别正则在进程内只编译一次；超过 20,000 字符的内容跳过语义检测，只保留 1,000 字符用于短暂预览。
+- 外部插件最多安装 32 个，每个最多 64 KB，启动后使用内存中的固定列表匹配。
 - 插件只在这次分析中按固定顺序快速判断；词典只对一个短单词或单个汉字按需查询。
 - 文本只短暂保留最多 1,000 个字符；文件最多读取 20 个 URL。
 - 图片仅生成最大 240 px 的临时缩略图，不写入磁盘或缓存。
 - 快速连续复制会复用同一个浮窗和 SwiftUI hosting view。
-- 2.2 Apple Silicon Release 空闲采样为 0.0% CPU，实际物理内存约 18 MB；外部插件目录只在启动时读取一次。
+- 2.2.1 Apple Silicon Release 连续三次空闲采样均为 0.0% CPU，实际物理内存约 18 MB；外部插件目录只在启动时读取一次。
 
 ### 已知限制
 
@@ -251,14 +254,18 @@ The built product is `CopyThat.app`; its Simplified Chinese display name is “�
 ### Performance and privacy design
 
 - `ClipboardMonitor` checks only `NSPasteboard.changeCount`: every 250 ms normally,
-  briefly every 80 ms after a copy, then back to normal after 2.4 seconds.
+  briefly every 60 ms after a copy, then back to normal after 0.9 seconds. Rapid
+  copy bursts respond faster while using about half as many burst polls.
 - Timer tolerance lets macOS coalesce wakeups, and pausing feedback stops the timer.
 - Content analysis runs once, and only after the clipboard changes.
+- Finder file types receive a constant-time preflight, so ordinary text copies no longer attempt to read file objects.
+- Code-recognition expressions compile once per process. Content above 20,000 characters skips semantic detection and retains only a 1,000-character temporary preview.
+- At most 32 imported plugins of 64 KB each are installed; matching uses the fixed in-memory list after launch.
 - Plugins perform bounded checks in a fixed order; dictionary lookup runs only for one short word or character.
 - At most 1,000 text characters and 20 file URLs are retained for the short-lived HUD.
 - Images become temporary thumbnails no larger than 240 px and are never written to disk.
 - Rapid copies reuse the same panel and SwiftUI hosting view.
-- The 2.2 Apple Silicon Release idle sample reported 0.0% CPU and an 18 MB physical footprint; the external plugin directory is read only once at launch.
+- Three idle samples of the 2.2.1 Apple Silicon Release reported 0.0% CPU and an 18 MB physical footprint; the external plugin directory is read only once at launch.
 
 ### Known limitation
 

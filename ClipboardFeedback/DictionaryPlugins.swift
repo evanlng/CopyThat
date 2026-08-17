@@ -26,6 +26,9 @@ struct SystemDictionaryProvider: LocalDefinitionProviding {
 
 struct EnglishWordContentDetector: ClipboardContentDetector {
     let kind = ClipboardContentKind.englishWord
+    private static let wordExpression = try! NSRegularExpression(
+        pattern: #"^[A-Za-z]+(?:['’-][A-Za-z]+)*$"#
+    )
     private let definitions: any LocalDefinitionProviding
 
     init(definitions: any LocalDefinitionProviding = SystemDictionaryProvider()) {
@@ -34,11 +37,9 @@ struct EnglishWordContentDetector: ClipboardContentDetector {
 
     func detect(in text: String) -> ClipboardContent? {
         let word = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard (1...48).contains(word.count),
-              word.range(
-                of: #"^[A-Za-z]+(?:['’-][A-Za-z]+)*$"#,
-                options: .regularExpression
-              ) != nil,
+        guard (1...48).contains(word.count) else { return nil }
+        let range = NSRange(word.startIndex..<word.endIndex, in: word)
+        guard Self.wordExpression.firstMatch(in: word, range: range)?.range == range,
               let definition = definitions.definition(for: word) else {
             return nil
         }

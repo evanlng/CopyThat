@@ -37,8 +37,9 @@ final class TextPreviewTests: XCTestCase {
     func testMonitorUsesResponsiveAdaptiveIntervals() {
         let configuration = ClipboardMonitorConfiguration.responsive
         XCTAssertLessThanOrEqual(configuration.idleInterval, 0.25)
-        XCTAssertLessThanOrEqual(configuration.activeInterval, 0.08)
-        XCTAssertLessThan(configuration.activeDuration, 3.0)
+        XCTAssertLessThanOrEqual(configuration.activeInterval, 0.06)
+        XCTAssertLessThanOrEqual(configuration.activeDuration, 0.9)
+        XCTAssertEqual(configuration.activePollLimit, 15)
     }
 
     func testHUDIsExactlyCenteredInVisibleScreenFrame() {

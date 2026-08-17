@@ -3,8 +3,13 @@ import AppKit
 /// Performs one bounded, local inspection after the monitor observes a new
 /// pasteboard changeCount. Returned data lives only as long as its HUD/window.
 struct ClipboardAnalyzer {
+    private static let maximumAnalysisCharacters = 20_000
     private static let retainedTextLimit = 1_000
     private static let retainedFileLimit = 20
+    private static let filePasteboardTypes: [NSPasteboard.PasteboardType] = [
+        .fileURL,
+        NSPasteboard.PasteboardType("NSFilenamesPboardType")
+    ]
 
     let registry: ClipboardDetectionRegistry
     let imagePreviewGenerator: ImagePreviewGenerator
@@ -22,13 +27,19 @@ struct ClipboardAnalyzer {
         enabledKinds: Set<ClipboardContentKind> = Set(ClipboardContentKind.allCases)
     ) -> ClipboardContent {
         if enabledKinds.contains(.files),
+           pasteboard.availableType(from: Self.filePasteboardTypes) != nil,
            let fileContent = fileContent(from: pasteboard) {
             return fileContent
         }
 
         if enabledKinds.contains(.image),
-           pasteboard.availableType(from: [.png, .tiff]) != nil {
-            return .image(thumbnail: imagePreviewGenerator.makePreview(from: pasteboard))
+           let imageType = pasteboard.availableType(from: [.png, .tiff]) {
+            return .image(
+                thumbnail: imagePreviewGenerator.makePreview(
+                    from: pasteboard,
+                    type: imageType
+                )
+            )
         }
 
         if enabledKinds.contains(.link),
@@ -38,7 +49,15 @@ struct ClipboardAnalyzer {
         }
 
         if let text = pasteboard.string(forType: .string), !text.isEmpty {
-            if let detection = registry.detect(in: text, enabledKinds: enabledKinds) {
+            // Never let a multi-megabyte paste make every detector traverse the
+            // full value. Oversized content remains ordinary text feedback.
+            let isOversized = text.index(
+                text.startIndex,
+                offsetBy: Self.maximumAnalysisCharacters + 1,
+                limitedBy: text.endIndex
+            ) != nil
+            if !isOversized,
+               let detection = registry.detect(in: text, enabledKinds: enabledKinds) {
                 return detection
             }
             return .text(String(text.prefix(Self.retainedTextLimit)))

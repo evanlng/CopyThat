@@ -19,10 +19,14 @@ struct ImagePreviewGenerator {
         self.maximumPixelDimension = maximumPixelDimension
     }
 
-    func makePreview(from pasteboard: NSPasteboard) -> ClipboardImagePreview? {
+    func makePreview(
+        from pasteboard: NSPasteboard,
+        type preferredType: NSPasteboard.PasteboardType? = nil
+    ) -> ClipboardImagePreview? {
         autoreleasepool {
             guard maximumPixelDimension > 0,
-                  let type = pasteboard.availableType(from: [.png, .tiff]),
+                  let type = preferredType
+                    ?? pasteboard.availableType(from: [.png, .tiff]),
                   let data = pasteboard.data(forType: type),
                   let source = CGImageSourceCreateWithData(data as CFData, nil) else {
                 return nil

@@ -6,6 +6,7 @@ import Foundation
 struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
     static let currentSchemaVersion = 1
     static let maximumFileSize = 64 * 1_024
+    static let maximumInstalledPlugins = 32
 
     let schemaVersion: Int
     let identifier: String
@@ -127,6 +128,7 @@ enum DeclarativePluginValidationError: LocalizedError, Equatable {
     case invalidSymbol
     case invalidMatches
     case unsafeURLTemplate
+    case tooManyPlugins
 
     var errorDescription: String? {
         switch self {
@@ -146,11 +148,17 @@ enum DeclarativePluginValidationError: LocalizedError, Equatable {
             return "The plugin must select between one and four supported content types."
         case .unsafeURLTemplate:
             return "The action must be an HTTPS URL with one {content} placeholder in a query value."
+        case .tooManyPlugins:
+            return "CopyThat supports up to 32 imported plugins."
         }
     }
 }
 
 enum DeclarativePluginCodec {
+    private static let identifierExpression = try! NSRegularExpression(
+        pattern: #"^[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9][A-Za-z0-9-]*)+$"#
+    )
+
     static func decodeAndValidate(_ data: Data) throws -> DeclarativePluginManifest {
         guard data.count <= DeclarativePluginManifest.maximumFileSize else {
             throw DeclarativePluginValidationError.fileTooLarge
@@ -181,10 +189,8 @@ enum DeclarativePluginCodec {
             manifest.identifier.startIndex..<manifest.identifier.endIndex,
             in: manifest.identifier
         )
-        let identifierPattern = #"^[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9][A-Za-z0-9-]*)+$"#
-        let identifierExpression = try! NSRegularExpression(pattern: identifierPattern)
         guard manifest.identifier.count <= 120,
-              identifierExpression.firstMatch(
+              Self.identifierExpression.firstMatch(
                 in: manifest.identifier,
                 range: identifierRange
               )?.range == identifierRange else {

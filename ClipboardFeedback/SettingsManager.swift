@@ -277,6 +277,13 @@ final class SettingsManager: ObservableObject {
 
         let data = try Data(contentsOf: sourceURL, options: .mappedIfSafe)
         let manifest = try DeclarativePluginCodec.decodeAndValidate(data)
+        let isUpdate = installedDeclarativePlugins.contains {
+            $0.identifier == manifest.identifier
+        }
+        guard isUpdate || installedDeclarativePlugins.count
+            < DeclarativePluginManifest.maximumInstalledPlugins else {
+            throw DeclarativePluginValidationError.tooManyPlugins
+        }
         let canonicalData = try DeclarativePluginCodec.encoded(manifest)
 
         try FileManager.default.createDirectory(
@@ -371,8 +378,26 @@ final class SettingsManager: ObservableObject {
             return []
         }
 
+        var preferredRanks: [String: Int] = [:]
+        for (index, identifier) in preferredOrder.enumerated()
+            where preferredRanks[identifier] == nil {
+            preferredRanks[identifier] = index
+        }
+        let candidates = fileURLs
+            .filter { $0.pathExtension == "copythatplugin" }
+            .sorted { lhs, rhs in
+                let lhsIdentifier = lhs.deletingPathExtension().lastPathComponent
+                let rhsIdentifier = rhs.deletingPathExtension().lastPathComponent
+                let lhsRank = preferredRanks[lhsIdentifier] ?? Int.max
+                let rhsRank = preferredRanks[rhsIdentifier] ?? Int.max
+                if lhsRank != rhsRank { return lhsRank < rhsRank }
+                return lhsIdentifier.localizedStandardCompare(rhsIdentifier)
+                    == .orderedAscending
+            }
+            .prefix(DeclarativePluginManifest.maximumInstalledPlugins)
+
         var pluginsByID: [String: DeclarativePluginManifest] = [:]
-        for fileURL in fileURLs where fileURL.pathExtension == "copythatplugin" {
+        for fileURL in candidates {
             guard let values = try? fileURL.resourceValues(forKeys: [.fileSizeKey]),
                   (values.fileSize ?? 0) <= DeclarativePluginManifest.maximumFileSize,
                   let data = try? Data(contentsOf: fileURL, options: .mappedIfSafe),

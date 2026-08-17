@@ -7,9 +7,14 @@ struct ClipboardMonitorConfiguration: Equatable {
 
     static let responsive = ClipboardMonitorConfiguration(
         idleInterval: 0.25,
-        activeInterval: 0.08,
-        activeDuration: 2.4
+        activeInterval: 0.06,
+        activeDuration: 0.9
     )
+
+    var activePollLimit: Int {
+        guard activeInterval > 0, activeDuration > 0 else { return 1 }
+        return max(1, Int((activeDuration / activeInterval).rounded()))
+    }
 }
 
 @MainActor
@@ -23,7 +28,7 @@ final class ClipboardMonitor {
     private let onChange: ChangeHandler
     private var lastChangeCount: Int
     private var timer: Timer?
-    private var activeUntil: Date?
+    private var remainingActivePolls = 0
     private var currentInterval: TimeInterval?
 
     init(
@@ -47,7 +52,7 @@ final class ClipboardMonitor {
         guard timer == nil else { return }
 
         lastChangeCount = pasteboard.changeCount
-        activeUntil = nil
+        remainingActivePolls = 0
         installTimer(interval: configuration.idleInterval)
     }
 
@@ -55,7 +60,7 @@ final class ClipboardMonitor {
         timer?.invalidate()
         timer = nil
         currentInterval = nil
-        activeUntil = nil
+        remainingActivePolls = 0
     }
 
     private func installTimer(interval: TimeInterval) {
@@ -69,7 +74,7 @@ final class ClipboardMonitor {
         }
         timer.tolerance = interval == configuration.idleInterval
             ? min(0.04, interval * 0.2)
-            : min(0.015, interval * 0.2)
+            : min(0.012, interval * 0.2)
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
         currentInterval = interval
@@ -78,15 +83,19 @@ final class ClipboardMonitor {
     private func poll() {
         let currentChangeCount = pasteboard.changeCount
         guard currentChangeCount != lastChangeCount else {
-            if let activeUntil, Date() >= activeUntil {
-                self.activeUntil = nil
+            if currentInterval == configuration.activeInterval,
+               remainingActivePolls > 0 {
+                remainingActivePolls -= 1
+            }
+            if currentInterval == configuration.activeInterval,
+               remainingActivePolls == 0 {
                 installTimer(interval: configuration.idleInterval)
             }
             return
         }
 
         lastChangeCount = currentChangeCount
-        activeUntil = Date().addingTimeInterval(configuration.activeDuration)
+        remainingActivePolls = configuration.activePollLimit
         installTimer(interval: configuration.activeInterval)
 
         // The monitor retains no content after handing off this one analysis.

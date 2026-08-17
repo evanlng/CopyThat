@@ -13,9 +13,9 @@ struct ClipboardDetectionRegistry {
         EmailAddressContentDetector(),
         PhoneNumberContentDetector(),
         CalculationContentDetector(),
-        CodeContentDetector(),
         ChineseCharacterContentDetector(),
-        EnglishWordContentDetector()
+        EnglishWordContentDetector(),
+        CodeContentDetector()
     ])
 
     private let detectors: [any ClipboardContentDetector]
