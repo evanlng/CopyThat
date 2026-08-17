@@ -21,4 +21,8 @@ extension Bundle {
         object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
             ?? "CopyThat"
     }
+
+    func copyThatDisplayName(in locale: InterfaceLocale) -> String {
+        L10n.text("CopyThat", "牛马", locale: locale)
+    }
 }

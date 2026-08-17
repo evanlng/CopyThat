@@ -84,6 +84,56 @@ final class PluginArchitectureTests: XCTestCase {
         let enabled = Set(ClipboardActionPluginID.allCases).subtracting([.openSafari])
         XCTAssertNil(content.primaryAction(enabledPluginIDs: enabled))
     }
+
+    func testEnglishAndChineseInterfaceStringsAreExplicit() {
+        XCTAssertEqual(
+            ClipboardContent.link(URL(string: "https://example.com")!)
+                .title(in: .english),
+            "Link copied"
+        )
+        XCTAssertEqual(
+            ClipboardContent.link(URL(string: "https://example.com")!)
+                .title(in: .simplifiedChinese),
+            "链接已复制"
+        )
+        XCTAssertEqual(
+            ClipboardActionPluginID.copyCalculation.title(in: .simplifiedChinese),
+            "复制结果"
+        )
+    }
+
+    @MainActor
+    func testPluginsCanBeRemovedAndInstalledWithoutLosingTheCatalog() {
+        let suiteName = "CopyThat.PluginArchitectureTests.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            return XCTFail("Could not create isolated defaults")
+        }
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let settings = SettingsManager(defaults: defaults)
+        XCTAssertTrue(settings.isDetectionInstalled(.calculation))
+        XCTAssertTrue(settings.enabledDetectionKinds.contains(.calculation))
+
+        settings.uninstallDetectionPlugin(.calculation)
+        XCTAssertFalse(settings.isDetectionInstalled(.calculation))
+        XCTAssertFalse(settings.enabledDetectionKinds.contains(.calculation))
+
+        settings.installDetectionPlugin(.calculation)
+        XCTAssertTrue(settings.isDetectionInstalled(.calculation))
+        XCTAssertTrue(settings.isDetectionEnabled(.calculation))
+
+        settings.uninstallActionPlugin(.copyCalculation)
+        XCTAssertFalse(settings.enabledActionPluginIDs.contains(.copyCalculation))
+
+        settings.installActionPlugin(.copyCalculation)
+        XCTAssertTrue(settings.isActionPluginEnabled(.copyCalculation))
+
+        settings.appLanguage = .simplifiedChinese
+        let reloaded = SettingsManager(defaults: defaults)
+        XCTAssertEqual(reloaded.appLanguage, .simplifiedChinese)
+        XCTAssertTrue(reloaded.isDetectionInstalled(.calculation))
+        XCTAssertTrue(reloaded.isActionPluginInstalled(.copyCalculation))
+    }
 }
 
 private struct StubDefinitions: LocalDefinitionProviding {

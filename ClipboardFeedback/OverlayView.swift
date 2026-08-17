@@ -6,6 +6,7 @@ struct OverlayView: View {
     let glassEffectStrength: Double
     let usesNativeGlassBackground: Bool
     let primaryAction: ClipboardActionDescriptor?
+    let locale: InterfaceLocale
     let performAction: (ClipboardActionDescriptor) -> Void
     let onHoverChanged: (Bool) -> Void
     @Environment(\.colorScheme) private var colorScheme
@@ -79,7 +80,7 @@ struct OverlayView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(content.title)
+                    Text(content.title(in: locale))
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.primary)
 
@@ -128,7 +129,13 @@ struct OverlayView: View {
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .strokeBorder(.white.opacity(0.18), lineWidth: 0.5)
                         }
-                        .accessibilityLabel("Copied image preview")
+                        .accessibilityLabel(
+                            L10n.text(
+                                "Copied image preview",
+                                "已复制图片预览",
+                                locale: locale
+                            )
+                        )
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -144,10 +151,14 @@ struct OverlayView: View {
         switch content {
         case .englishWord(let word, let definition):
             if #available(macOS 15.0, *) {
-                BilingualDefinitionView(word: word, definition: definition)
+                BilingualDefinitionView(
+                    word: word,
+                    definition: definition,
+                    locale: locale
+                )
             } else {
                 OverlayDetailRow(
-                    label: "English",
+                    label: L10n.text("English", "英文", locale: locale),
                     value: definition,
                     lineLimit: 4
                 )
@@ -156,13 +167,13 @@ struct OverlayView: View {
         case .chineseCharacter(_, let pinyin, let definition):
             VStack(alignment: .leading, spacing: 5) {
                 OverlayDetailRow(
-                    label: "拼音 / Pinyin",
+                    label: L10n.text("Pinyin", "拼音", locale: locale),
                     value: pinyin,
                     lineLimit: 1
                 )
                 if let definition, !definition.isEmpty {
                     OverlayDetailRow(
-                        label: "释义 / Meaning",
+                        label: L10n.text("Meaning", "释义", locale: locale),
                         value: definition,
                         lineLimit: 3
                     )
@@ -170,7 +181,7 @@ struct OverlayView: View {
             }
 
         default:
-            if let preview = content.preview, !preview.isEmpty {
+            if let preview = content.preview(in: locale), !preview.isEmpty {
                 Text(preview)
                     .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
@@ -223,8 +234,9 @@ private struct OverlayDetailRow: View {
 private struct BilingualDefinitionView: View {
     let word: String
     let definition: String
+    let locale: InterfaceLocale
 
-    @State private var chineseDefinition = "正在检查系统中文翻译…"
+    @State private var chineseDefinition = ""
     @State private var needsLanguageDownload = false
     @State private var translationConfiguration: TranslationSession.Configuration?
 
@@ -234,12 +246,12 @@ private struct BilingualDefinitionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             OverlayDetailRow(
-                label: "English",
+                label: L10n.text("English", "英文", locale: locale),
                 value: definition,
                 lineLimit: 4
             )
             HStack(alignment: .top, spacing: 8) {
-                Text("中文")
+                Text(L10n.text("Chinese", "中文", locale: locale))
                     .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(.tertiary)
                     .frame(width: 88, alignment: .leading)
@@ -252,9 +264,13 @@ private struct BilingualDefinitionView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if needsLanguageDownload {
-                    Button("下载") {
+                    Button(L10n.text("Download", "下载", locale: locale)) {
                         needsLanguageDownload = false
-                        chineseDefinition = "正在准备系统中文释义…"
+                        chineseDefinition = L10n.text(
+                            "Preparing the Chinese meaning…",
+                            "正在准备系统中文释义…",
+                            locale: locale
+                        )
                         translationConfiguration = TranslationSession.Configuration(
                             source: sourceLanguage,
                             target: targetLanguage
@@ -262,11 +278,22 @@ private struct BilingualDefinitionView: View {
                     }
                     .buttonStyle(.borderless)
                     .font(.system(size: 11.5, weight: .semibold))
-                    .help("Install Apple's on-device English–Chinese translation language pack")
+                    .help(
+                        L10n.text(
+                            "Install Apple's on-device English–Chinese translation language pack",
+                            "安装 Apple 设备端中英翻译语言包",
+                            locale: locale
+                        )
+                    )
                 }
             }
         }
         .task(id: word) {
+            chineseDefinition = L10n.text(
+                "Checking on-device Chinese translation…",
+                "正在检查系统中文翻译…",
+                locale: locale
+            )
             let status = await LanguageAvailability().status(
                 from: sourceLanguage,
                 to: targetLanguage
@@ -275,19 +302,35 @@ private struct BilingualDefinitionView: View {
             guard !Task.isCancelled else { return }
             switch status {
             case .installed:
-                chineseDefinition = "正在准备系统中文释义…"
+                chineseDefinition = L10n.text(
+                    "Preparing the Chinese meaning…",
+                    "正在准备系统中文释义…",
+                    locale: locale
+                )
                 translationConfiguration = TranslationSession.Configuration(
                     source: sourceLanguage,
                     target: targetLanguage
                 )
             case .supported:
-                chineseDefinition = "需要安装系统中英翻译语言包"
+                chineseDefinition = L10n.text(
+                    "On-device English–Chinese language pack required",
+                    "需要安装系统中英翻译语言包",
+                    locale: locale
+                )
                 needsLanguageDownload = true
             case .unsupported:
-                chineseDefinition = "当前系统不支持中英翻译"
+                chineseDefinition = L10n.text(
+                    "English–Chinese translation is unavailable",
+                    "当前系统不支持中英翻译",
+                    locale: locale
+                )
                 needsLanguageDownload = false
             @unknown default:
-                chineseDefinition = "系统中文翻译暂不可用"
+                chineseDefinition = L10n.text(
+                    "Chinese translation is temporarily unavailable",
+                    "系统中文翻译暂不可用",
+                    locale: locale
+                )
                 needsLanguageDownload = false
             }
         }
@@ -300,7 +343,11 @@ private struct BilingualDefinitionView: View {
                 }
             } catch {
                 await MainActor.run {
-                    chineseDefinition = "需要安装系统中英翻译语言包"
+                    chineseDefinition = L10n.text(
+                        "On-device English–Chinese language pack required",
+                        "需要安装系统中英翻译语言包",
+                        locale: locale
+                    )
                     needsLanguageDownload = true
                     translationConfiguration = nil
                 }

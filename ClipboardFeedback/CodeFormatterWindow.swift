@@ -5,13 +5,18 @@ import SwiftUI
 final class CodeFormatterWindowManager: NSObject, NSWindowDelegate {
     private var window: NSWindow?
 
-    func show(language: CodeLanguage, source: String) {
+    func show(
+        language: CodeLanguage,
+        source: String,
+        locale: InterfaceLocale
+    ) {
         window?.close()
 
         let result = CodeFormatter.format(source, language: language)
         let view = CodeFormatterView(
             language: language,
             result: result,
+            locale: locale,
             copyFormatted: { [weak self] formatted in
                 let pasteboard = NSPasteboard.general
                 pasteboard.clearContents()
@@ -26,7 +31,11 @@ final class CodeFormatterWindowManager: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Format \(language.title)"
+        window.title = L10n.text(
+            "Format \(language.title)",
+            "格式化 \(language.title)",
+            locale: locale
+        )
         window.delegate = self
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: view)
@@ -49,15 +58,23 @@ final class CodeFormatterWindowManager: NSObject, NSWindowDelegate {
 private struct CodeFormatterView: View {
     let language: CodeLanguage
     let result: Result<String, CodeFormattingError>
+    let locale: InterfaceLocale
     let copyFormatted: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Label("Formatted \(language.title)", systemImage: "curlybraces")
+                Label(
+                    L10n.text(
+                        "Formatted \(language.title)",
+                        "已格式化 \(language.title)",
+                        locale: locale
+                    ),
+                    systemImage: "curlybraces"
+                )
                     .font(.title3.weight(.semibold))
                 Spacer()
-                Text("Review before copying")
+                Text(L10n.text("Review before copying", "复制前请检查", locale: locale))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -81,11 +98,15 @@ private struct CodeFormatterView: View {
                 }
 
                 HStack {
-                    Text("Nothing is copied until you click the button.")
+                    Text(L10n.text(
+                        "Nothing is copied until you click the button.",
+                        "点击按钮之前不会写入剪贴板。",
+                        locale: locale
+                    ))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Copy formatted") {
+                    Button(L10n.text("Copy formatted", "复制格式化内容", locale: locale)) {
                         copyFormatted(formatted)
                     }
                     .keyboardShortcut(.defaultAction)
@@ -93,13 +114,36 @@ private struct CodeFormatterView: View {
 
             case .failure(let error):
                 ContentUnavailableView(
-                    "Could Not Format Code",
+                    L10n.text("Could Not Format Code", "无法格式化代码", locale: locale),
                     systemImage: "exclamationmark.triangle",
-                    description: Text(error.localizedDescription)
+                    description: Text(localizedError(error))
                 )
             }
         }
         .padding(22)
         .frame(minWidth: 560, minHeight: 380)
+    }
+
+    private func localizedError(_ error: CodeFormattingError) -> String {
+        switch error {
+        case .unsupported:
+            return L10n.text(
+                "Basic formatting is currently available for JSON and Python.",
+                "基础格式化目前支持 JSON 和 Python。",
+                locale: locale
+            )
+        case .invalidJSON:
+            return L10n.text(
+                "The copied text is not valid JSON.",
+                "复制的文字不是有效的 JSON。",
+                locale: locale
+            )
+        case .tooLarge:
+            return L10n.text(
+                "This code is too large for the lightweight formatter.",
+                "代码过大，轻量格式化器无法处理。",
+                locale: locale
+            )
+        }
     }
 }

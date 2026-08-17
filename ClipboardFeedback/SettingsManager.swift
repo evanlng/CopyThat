@@ -9,6 +9,9 @@ final class SettingsManager: ObservableObject {
         static let feedbackEnabled = "feedbackEnabled"
         static let disabledDetectionKinds = "disabledDetectionKinds"
         static let disabledActionPlugins = "disabledActionPlugins"
+        static let uninstalledDetectionKinds = "uninstalledDetectionKinds"
+        static let uninstalledActionPlugins = "uninstalledActionPlugins"
+        static let appLanguage = "appLanguage"
         static let searchEngine = "searchEngine"
         static let customSearchEngineName = "customSearchEngineName"
         static let customSearchURLTemplate = "customSearchURLTemplate"
@@ -27,6 +30,14 @@ final class SettingsManager: ObservableObject {
     @Published private(set) var launchAtLoginMessage: String?
     @Published private(set) var disabledDetectionKindIDs: Set<String>
     @Published private(set) var disabledActionPluginIDs: Set<String>
+    @Published private(set) var uninstalledDetectionKindIDs: Set<String>
+    @Published private(set) var uninstalledActionPluginIDs: Set<String>
+
+    @Published var appLanguage: AppLanguage {
+        didSet {
+            defaults.set(appLanguage.rawValue, forKey: Key.appLanguage)
+        }
+    }
 
     @Published var searchEngine: SearchEngineOption {
         didSet {
@@ -48,7 +59,7 @@ final class SettingsManager: ObservableObject {
 
     @Published private(set) var glassEffectStrength: Double
 
-    private init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if defaults.object(forKey: Key.feedbackEnabled) == nil {
             self.isEnabled = true
@@ -62,6 +73,15 @@ final class SettingsManager: ObservableObject {
         self.disabledActionPluginIDs = Set(
             defaults.stringArray(forKey: Key.disabledActionPlugins) ?? []
         )
+        self.uninstalledDetectionKindIDs = Set(
+            defaults.stringArray(forKey: Key.uninstalledDetectionKinds) ?? []
+        )
+        self.uninstalledActionPluginIDs = Set(
+            defaults.stringArray(forKey: Key.uninstalledActionPlugins) ?? []
+        )
+        self.appLanguage = AppLanguage(
+            rawValue: defaults.string(forKey: Key.appLanguage) ?? ""
+        ) ?? .system
         self.searchEngine = SearchEngineOption(
             rawValue: defaults.string(forKey: Key.searchEngine) ?? ""
         ) ?? .duckDuckGo
@@ -116,21 +136,34 @@ final class SettingsManager: ObservableObject {
 
     var enabledDetectionKinds: Set<ClipboardContentKind> {
         Set(ClipboardContentKind.allCases.filter {
-            !disabledDetectionKindIDs.contains($0.rawValue)
+            isDetectionInstalled($0) && !disabledDetectionKindIDs.contains($0.rawValue)
         })
     }
 
     var enabledActionPluginIDs: Set<ClipboardActionPluginID> {
         Set(ClipboardActionPluginID.allCases.filter {
-            !disabledActionPluginIDs.contains($0.rawValue)
+            isActionPluginInstalled($0) && !disabledActionPluginIDs.contains($0.rawValue)
         })
     }
 
+    var resolvedLocale: InterfaceLocale {
+        appLanguage.resolvedLocale
+    }
+
+    func isDetectionInstalled(_ kind: ClipboardContentKind) -> Bool {
+        !uninstalledDetectionKindIDs.contains(kind.rawValue)
+    }
+
+    func isActionPluginInstalled(_ plugin: ClipboardActionPluginID) -> Bool {
+        !uninstalledActionPluginIDs.contains(plugin.rawValue)
+    }
+
     func isDetectionEnabled(_ kind: ClipboardContentKind) -> Bool {
-        !disabledDetectionKindIDs.contains(kind.rawValue)
+        isDetectionInstalled(kind) && !disabledDetectionKindIDs.contains(kind.rawValue)
     }
 
     func setDetection(_ kind: ClipboardContentKind, enabled: Bool) {
+        guard isDetectionInstalled(kind) else { return }
         if enabled {
             disabledDetectionKindIDs.remove(kind.rawValue)
         } else {
@@ -143,10 +176,11 @@ final class SettingsManager: ObservableObject {
     }
 
     func isActionPluginEnabled(_ plugin: ClipboardActionPluginID) -> Bool {
-        !disabledActionPluginIDs.contains(plugin.rawValue)
+        isActionPluginInstalled(plugin) && !disabledActionPluginIDs.contains(plugin.rawValue)
     }
 
     func setActionPlugin(_ plugin: ClipboardActionPluginID, enabled: Bool) {
+        guard isActionPluginInstalled(plugin) else { return }
         if enabled {
             disabledActionPluginIDs.remove(plugin.rawValue)
         } else {
@@ -155,6 +189,49 @@ final class SettingsManager: ObservableObject {
         defaults.set(
             Array(disabledActionPluginIDs).sorted(),
             forKey: Key.disabledActionPlugins
+        )
+    }
+
+    func installDetectionPlugin(_ kind: ClipboardContentKind) {
+        uninstalledDetectionKindIDs.remove(kind.rawValue)
+        disabledDetectionKindIDs.remove(kind.rawValue)
+        persistPluginState()
+    }
+
+    func uninstallDetectionPlugin(_ kind: ClipboardContentKind) {
+        uninstalledDetectionKindIDs.insert(kind.rawValue)
+        disabledDetectionKindIDs.remove(kind.rawValue)
+        persistPluginState()
+    }
+
+    func installActionPlugin(_ plugin: ClipboardActionPluginID) {
+        uninstalledActionPluginIDs.remove(plugin.rawValue)
+        disabledActionPluginIDs.remove(plugin.rawValue)
+        persistPluginState()
+    }
+
+    func uninstallActionPlugin(_ plugin: ClipboardActionPluginID) {
+        uninstalledActionPluginIDs.insert(plugin.rawValue)
+        disabledActionPluginIDs.remove(plugin.rawValue)
+        persistPluginState()
+    }
+
+    private func persistPluginState() {
+        defaults.set(
+            Array(disabledDetectionKindIDs).sorted(),
+            forKey: Key.disabledDetectionKinds
+        )
+        defaults.set(
+            Array(disabledActionPluginIDs).sorted(),
+            forKey: Key.disabledActionPlugins
+        )
+        defaults.set(
+            Array(uninstalledDetectionKindIDs).sorted(),
+            forKey: Key.uninstalledDetectionKinds
+        )
+        defaults.set(
+            Array(uninstalledActionPluginIDs).sorted(),
+            forKey: Key.uninstalledActionPlugins
         )
     }
 
@@ -168,8 +245,16 @@ final class SettingsManager: ObservableObject {
             launchAtLoginMessage = nil
         } catch {
             launchAtLoginMessage = enabled
-                ? "Move the app to Applications, then try again."
-                : "Could not update the login item."
+                ? L10n.text(
+                    "Move the app to Applications, then try again.",
+                    "请先将 App 移到“应用程序”文件夹，然后重试。",
+                    locale: resolvedLocale
+                )
+                : L10n.text(
+                    "Could not update the login item.",
+                    "无法更新登录项。",
+                    locale: resolvedLocale
+                )
         }
 
         launchAtLoginEnabled = SMAppService.mainApp.status == .enabled

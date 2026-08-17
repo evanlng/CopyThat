@@ -8,20 +8,25 @@ struct ClipboardFeedbackSettingsView: View {
         TabView {
             GeneralSettingsView(settings: settings)
                 .tabItem {
-                    Label("General", systemImage: "gearshape")
+                    Label(t("General", "通用"), systemImage: "gearshape")
                 }
 
             DetectionSettingsView(settings: settings)
                 .tabItem {
-                    Label("Plugins", systemImage: "puzzlepiece.extension")
+                    Label(t("Plugins", "插件"), systemImage: "puzzlepiece.extension")
                 }
 
-            AboutSettingsView()
+            AboutSettingsView(settings: settings)
                 .tabItem {
-                    Label("About", systemImage: "info.circle")
+                    Label(t("About", "关于"), systemImage: "info.circle")
                 }
         }
+        .environment(\.locale, settings.resolvedLocale.locale)
         .frame(width: 560, height: 440)
+    }
+
+    private func t(_ english: String, _ chinese: String) -> String {
+        L10n.text(english, chinese, locale: settings.resolvedLocale)
     }
 }
 
@@ -31,52 +36,84 @@ private struct GeneralSettingsView: View {
 
     var body: some View {
         Form {
-            Section("CopyThat") {
-                Toggle("Enable copy feedback", isOn: $settings.isEnabled)
-                Text("Show a floating confirmation whenever the system clipboard changes.")
+            Section(Bundle.main.copyThatDisplayName(in: settings.resolvedLocale)) {
+                Toggle(t("Enable copy feedback", "启用复制反馈"), isOn: $settings.isEnabled)
+                Text(t(
+                    "Show a floating confirmation whenever the system clipboard changes.",
+                    "系统剪贴板发生变化时显示确认浮窗。"
+                ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Search") {
-                Picker("Search engine", selection: $settings.searchEngine) {
+            Section(t("Language", "语言")) {
+                Picker(t("Interface language", "界面语言"), selection: $settings.appLanguage) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.title(in: settings.resolvedLocale)).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text(t(
+                    "Automatic matches the current macOS language. Changes take effect immediately.",
+                    "自动模式会匹配当前 macOS 语言，切换后立即生效。"
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Section(t("Search", "搜索")) {
+                Picker(t("Search engine", "搜索引擎"), selection: $settings.searchEngine) {
                     ForEach(SearchEngineOption.allCases) { engine in
-                        Text(engine.title).tag(engine)
+                        Text(
+                            engine == .custom
+                                ? t("Custom", "自定义")
+                                : engine.title
+                        ).tag(engine)
                     }
                 }
                 .pickerStyle(.menu)
 
                 if settings.searchEngine == .custom {
                     TextField(
-                        "Search engine name",
+                        t("Search engine name", "搜索引擎名称"),
                         text: $settings.customSearchEngineName
                     )
                     TextField(
-                        "URL template",
+                        t("URL template", "URL 模板"),
                         text: $settings.customSearchURLTemplate,
                         prompt: Text("https://example.com/search?q={query}")
                     )
 
-                    Text("Use {query} once in an http:// or https:// query parameter.")
+                    Text(t(
+                        "Use {query} once in an http:// or https:// query parameter.",
+                        "在 http:// 或 https:// 查询参数中使用一次 {query}。"
+                    ))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     if !settings.customSearchURLTemplate.isEmpty,
                        !settings.isCustomSearchTemplateValid {
-                        Text("Enter a valid web URL containing one {query} placeholder.")
+                        Text(t(
+                            "Enter a valid web URL containing one {query} placeholder.",
+                            "请输入包含一个 {query} 占位符的有效网址。"
+                        ))
                             .font(.caption)
                             .foregroundStyle(.red)
                     }
                 }
 
-                Text("Search runs only after you click the button in the copy popup.")
+                Text(t(
+                    "Search runs only after you click the button in the copy popup.",
+                    "只有点击复制浮窗中的按钮后才会执行搜索。"
+                ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Startup") {
+            Section(t("Startup", "启动")) {
                 Toggle(
-                    "Launch at Login",
+                    t("Launch at Login", "登录时启动"),
                     isOn: Binding(
                         get: { settings.launchAtLoginEnabled },
                         set: { settings.setLaunchAtLogin($0) }
@@ -90,26 +127,33 @@ private struct GeneralSettingsView: View {
                 }
             }
 
-            Section("Appearance") {
+            Section(t("Appearance", "外观")) {
                 GlassEffectSettingsCard(settings: settings)
 
                 if #available(macOS 26.0, *) {
                     if reduceTransparency {
-                        Label("Liquid Glass is reduced by macOS", systemImage: "accessibility")
-                        Text("Turn off Reduce Transparency in System Settings → Accessibility → Display to see the full glass effect.")
+                        Label(t("Liquid Glass is reduced by macOS", "macOS 已减弱液态玻璃效果"), systemImage: "accessibility")
+                        Text(t(
+                            "Turn off Reduce Transparency in System Settings → Accessibility → Display to see the full glass effect.",
+                            "请在系统设置 → 辅助功能 → 显示中关闭“降低透明度”，以查看完整玻璃效果。"
+                        ))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
-                        Label("Interactive Liquid Glass is active", systemImage: "sparkles")
+                        Label(t("Interactive Liquid Glass is active", "交互式液态玻璃已启用"), systemImage: "sparkles")
                     }
                 } else {
-                    Text("System Material is used on this macOS version.")
+                    Text(t("System Material is used on this macOS version.", "当前 macOS 版本使用系统材质。"))
                         .foregroundStyle(.secondary)
                 }
             }
         }
         .formStyle(.grouped)
         .padding(.top, 8)
+    }
+
+    private func t(_ english: String, _ chinese: String) -> String {
+        L10n.text(english, chinese, locale: settings.resolvedLocale)
     }
 }
 
@@ -123,14 +167,15 @@ private struct GlassEffectSettingsCard: View {
             glassPreview
 
             HStack(alignment: .top, spacing: 12) {
-                Label("Glass style", systemImage: "circle.lefthalf.filled")
+                Label(t("Glass style", "玻璃样式"), systemImage: "circle.lefthalf.filled")
                     .fixedSize()
                     .frame(width: 96, alignment: .leading)
                     .padding(.top, 2)
 
                 GlassStyleSlider(
                     value: settings.glassEffectStrength,
-                    valueLabel: metrics.label,
+                    valueLabel: localizedMetricsLabel,
+                    locale: settings.resolvedLocale,
                     onChange: settings.setGlassEffectStrength
                 )
                 .frame(maxWidth: .infinity)
@@ -149,11 +194,28 @@ private struct GlassEffectSettingsCard: View {
     private var styleDescription: String {
         switch metrics.level {
         case .clear:
-            return "Clear · Native transparent glass with maximum background visibility."
+            return t(
+                "Clear · Native transparent glass with maximum background visibility.",
+                "清透 · 原生透明玻璃，最大程度显示背景。"
+            )
         case .balanced:
-            return "Balanced · Native regular Liquid Glass with system-managed legibility."
+            return t(
+                "Balanced · Native regular Liquid Glass with system-managed legibility.",
+                "均衡 · 原生常规液态玻璃，由系统保证可读性。"
+            )
         case .strong:
-            return "Strong · Native regular Liquid Glass with a subtle semantic tint."
+            return t(
+                "Strong · Native regular Liquid Glass with a subtle semantic tint.",
+                "强烈 · 原生常规液态玻璃，并加入轻微语义色调。"
+            )
+        }
+    }
+
+    private var localizedMetricsLabel: String {
+        switch metrics.level {
+        case .clear: return t("Clear", "清透")
+        case .balanced: return t("Balanced", "均衡")
+        case .strong: return t("Strong", "强烈")
         }
     }
 
@@ -205,9 +267,13 @@ private struct GlassEffectSettingsCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Liquid Glass · \(metrics.label)")
+                Text("Liquid Glass · \(localizedMetricsLabel)")
                     .font(.subheadline.weight(.semibold))
-                Text(colorScheme == .dark ? "Dark appearance" : "Light appearance")
+                Text(
+                    colorScheme == .dark
+                        ? t("Dark appearance", "深色外观")
+                        : t("Light appearance", "浅色外观")
+                )
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -250,11 +316,16 @@ private struct GlassEffectSettingsCard: View {
             ? .black.opacity(metrics.fallbackSurfaceOpacity)
             : .white.opacity(metrics.fallbackSurfaceOpacity)
     }
+
+    private func t(_ english: String, _ chinese: String) -> String {
+        L10n.text(english, chinese, locale: settings.resolvedLocale)
+    }
 }
 
 private struct GlassStyleSlider: View {
     let value: Double
     let valueLabel: String
+    let locale: InterfaceLocale
     let onChange: (Double) -> Void
 
     var body: some View {
@@ -313,17 +384,17 @@ private struct GlassStyleSlider: View {
             GeometryReader { geometry in
                 let width = geometry.size.width
 
-                Text("Clear")
+                Text(L10n.text("Clear", "清透", locale: locale))
                     .position(
                         x: GlassStyleSliderGeometry.position(for: 0, width: width),
                         y: 8
                     )
-                Text("Balanced")
+                Text(L10n.text("Balanced", "均衡", locale: locale))
                     .position(
                         x: GlassStyleSliderGeometry.position(for: 0.5, width: width),
                         y: 8
                     )
-                Text("Strong")
+                Text(L10n.text("Strong", "强烈", locale: locale))
                     .position(
                         x: GlassStyleSliderGeometry.position(for: 1, width: width),
                         y: 8
@@ -334,7 +405,7 @@ private struct GlassStyleSlider: View {
             .frame(height: 17)
         }
         .accessibilityElement()
-        .accessibilityLabel("Glass style")
+        .accessibilityLabel(L10n.text("Glass style", "玻璃样式", locale: locale))
         .accessibilityValue(valueLabel)
         .accessibilityAdjustableAction { direction in
             switch direction {
@@ -369,34 +440,57 @@ struct GlassStyleSliderGeometry {
 private struct DetectionSettingsView: View {
     @ObservedObject var settings: SettingsManager
 
-    private var standardKinds: [ClipboardContentKind] {
-        ClipboardContentKind.allCases.filter { $0 != .code }
+    private var installedDetectionKinds: [ClipboardContentKind] {
+        ClipboardContentKind.allCases.filter(settings.isDetectionInstalled)
+    }
+
+    private var availableDetectionKinds: [ClipboardContentKind] {
+        ClipboardContentKind.allCases.filter { !settings.isDetectionInstalled($0) }
+    }
+
+    private var installedActionPlugins: [ClipboardActionPluginID] {
+        ClipboardActionPluginID.allCases.filter(settings.isActionPluginInstalled)
+    }
+
+    private var availableActionPlugins: [ClipboardActionPluginID] {
+        ClipboardActionPluginID.allCases.filter { !settings.isActionPluginInstalled($0) }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Content Plugins")
+                Text(t("Installed Content Plugins", "已安装的内容插件"))
                     .font(.title3.weight(.semibold))
 
-                Text("These switches control recognition and the information shown in the HUD.")
+                Text(t(
+                    "Switches pause recognition. Remove moves a plugin to Available Plugins and can be reversed at any time.",
+                    "开关用于暂停识别；删除会把插件移到“可安装插件”，随时可以重新安装。"
+                ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 VStack(spacing: 0) {
-                    ForEach(standardKinds) { kind in
-                        DetectionToggleRow(
+                    ForEach(installedDetectionKinds) { kind in
+                        InstalledDetectionPluginRow(
                             kind: kind,
+                            locale: settings.resolvedLocale,
                             isEnabled: Binding(
                                 get: { settings.isDetectionEnabled(kind) },
                                 set: { settings.setDetection(kind, enabled: $0) }
-                            )
+                            ),
+                            uninstall: { settings.uninstallDetectionPlugin(kind) }
                         )
 
-                        if kind != standardKinds.last {
+                        if kind != installedDetectionKinds.last {
                             Divider()
                                 .padding(.leading, 46)
                         }
+                    }
+
+                    if installedDetectionKinds.isEmpty {
+                        EmptyPluginListRow(
+                            message: t("No content plugins installed.", "未安装内容插件。")
+                        )
                     }
                 }
                 .background(
@@ -404,48 +498,39 @@ private struct DetectionSettingsView: View {
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                 )
 
-                Text("Developer Mode")
+                Text(t("Installed Action Plugins", "已安装的操作插件"))
                     .font(.title3.weight(.semibold))
                     .padding(.top, 8)
 
-                DetectionToggleRow(
-                    kind: .code,
-                    isEnabled: Binding(
-                        get: { settings.isDetectionEnabled(.code) },
-                        set: { settings.setDetection(.code, enabled: $0) }
-                    )
-                )
-                .background(
-                    Color(nsColor: .controlBackgroundColor).opacity(0.72),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                )
-
-                Text("Code recognition uses bounded local rules. JSON and Python can be formatted only after you click Format.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text("Action Plugins")
-                    .font(.title3.weight(.semibold))
-                    .padding(.top, 8)
-
-                Text("These switches control buttons only. Turning one off does not disable recognition.")
+                Text(t(
+                    "Action switches control buttons only. Turning one off does not disable content recognition.",
+                    "操作插件开关只控制按钮；关闭后不会停止内容识别。"
+                ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 VStack(spacing: 0) {
-                    ForEach(ClipboardActionPluginID.allCases) { plugin in
-                        ActionPluginToggleRow(
+                    ForEach(installedActionPlugins) { plugin in
+                        InstalledActionPluginRow(
                             plugin: plugin,
+                            locale: settings.resolvedLocale,
                             isEnabled: Binding(
                                 get: { settings.isActionPluginEnabled(plugin) },
                                 set: { settings.setActionPlugin(plugin, enabled: $0) }
-                            )
+                            ),
+                            uninstall: { settings.uninstallActionPlugin(plugin) }
                         )
 
-                        if plugin != ClipboardActionPluginID.allCases.last {
+                        if plugin != installedActionPlugins.last {
                             Divider()
                                 .padding(.leading, 46)
                         }
+                    }
+
+                    if installedActionPlugins.isEmpty {
+                        EmptyPluginListRow(
+                            message: t("No action plugins installed.", "未安装操作插件。")
+                        )
                     }
                 }
                 .background(
@@ -453,18 +538,66 @@ private struct DetectionSettingsView: View {
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                 )
 
-                Text("Plugins run only after the clipboard changes. Everything stays local, and disabled content falls back to ordinary copy feedback.")
+                if !availableDetectionKinds.isEmpty || !availableActionPlugins.isEmpty {
+                    Text(t("Available Plugins", "可安装插件"))
+                        .font(.title3.weight(.semibold))
+                        .padding(.top, 8)
+
+                    VStack(spacing: 0) {
+                        ForEach(availableDetectionKinds) { kind in
+                            AvailablePluginRow(
+                                title: kind.title(in: settings.resolvedLocale),
+                                subtitle: kind.detail(in: settings.resolvedLocale),
+                                symbolName: kind.symbolName,
+                                category: t("Content", "内容"),
+                                installTitle: t("Install", "安装"),
+                                install: { settings.installDetectionPlugin(kind) }
+                            )
+                            Divider().padding(.leading, 46)
+                        }
+
+                        ForEach(availableActionPlugins) { plugin in
+                            AvailablePluginRow(
+                                title: plugin.title(in: settings.resolvedLocale),
+                                subtitle: plugin.subtitle(in: settings.resolvedLocale),
+                                symbolName: plugin.symbolName,
+                                category: t("Action", "操作"),
+                                installTitle: t("Install", "安装"),
+                                install: { settings.installActionPlugin(plugin) }
+                            )
+
+                            if plugin != availableActionPlugins.last {
+                                Divider().padding(.leading, 46)
+                            }
+                        }
+                    }
+                    .background(
+                        Color(nsColor: .controlBackgroundColor).opacity(0.72),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    )
+                }
+
+                Text(t(
+                    "Built-in plugins do no work while the clipboard is idle. Installing or removing one adds no background service.",
+                    "内置插件在剪贴板空闲时不会工作；安装或删除插件都不会增加后台服务。"
+                ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .padding(24)
         }
     }
+
+    private func t(_ english: String, _ chinese: String) -> String {
+        L10n.text(english, chinese, locale: settings.resolvedLocale)
+    }
 }
 
-private struct ActionPluginToggleRow: View {
+private struct InstalledActionPluginRow: View {
     let plugin: ClipboardActionPluginID
+    let locale: InterfaceLocale
     @Binding var isEnabled: Bool
+    let uninstall: () -> Void
 
     var body: some View {
         HStack(spacing: 13) {
@@ -474,9 +607,9 @@ private struct ActionPluginToggleRow: View {
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(plugin.title)
+                Text(plugin.title(in: locale))
                     .font(.system(size: 14, weight: .medium))
-                Text(plugin.subtitle)
+                Text(plugin.subtitle(in: locale))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .lineLimit(2)
@@ -486,6 +619,16 @@ private struct ActionPluginToggleRow: View {
 
             Toggle("", isOn: $isEnabled)
                 .labelsHidden()
+
+            Button(role: .destructive, action: uninstall) {
+                Label(
+                    L10n.text("Remove", "删除", locale: locale),
+                    systemImage: "trash"
+                )
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .help(L10n.text("Remove plugin", "删除插件", locale: locale))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 11)
@@ -493,9 +636,11 @@ private struct ActionPluginToggleRow: View {
     }
 }
 
-private struct DetectionToggleRow: View {
+private struct InstalledDetectionPluginRow: View {
     let kind: ClipboardContentKind
+    let locale: InterfaceLocale
     @Binding var isEnabled: Bool
+    let uninstall: () -> Void
 
     var body: some View {
         HStack(spacing: 13) {
@@ -505,9 +650,9 @@ private struct DetectionToggleRow: View {
                 .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(kind.title)
+                Text(kind.title(in: locale))
                     .font(.system(size: 14, weight: .medium))
-                Text(kind.subtitle)
+                Text(kind.detail(in: locale))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -516,6 +661,16 @@ private struct DetectionToggleRow: View {
 
             Toggle("", isOn: $isEnabled)
                 .labelsHidden()
+
+            Button(role: .destructive, action: uninstall) {
+                Label(
+                    L10n.text("Remove", "删除", locale: locale),
+                    systemImage: "trash"
+                )
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .help(L10n.text("Remove plugin", "删除插件", locale: locale))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 11)
@@ -523,20 +678,80 @@ private struct DetectionToggleRow: View {
     }
 }
 
+private struct AvailablePluginRow: View {
+    let title: String
+    let subtitle: String
+    let symbolName: String
+    let category: String
+    let installTitle: String
+    let install: () -> Void
+
+    var body: some View {
+        HStack(spacing: 13) {
+            Image(systemName: symbolName)
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .medium))
+                    Text(category)
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.secondary.opacity(0.1), in: Capsule())
+                }
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+
+            Button(installTitle, action: install)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
+    }
+}
+
+private struct EmptyPluginListRow: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+    }
+}
+
 private struct AboutSettingsView: View {
+    @ObservedObject var settings: SettingsManager
+
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "doc.on.clipboard.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(.blue.gradient)
 
-            Text(Bundle.main.copyThatDisplayName)
+            Text(Bundle.main.copyThatDisplayName(in: settings.resolvedLocale))
                 .font(.title2.weight(.semibold))
 
-            Text("Version \(appVersion)")
+            Text(t("Version \(appVersion)", "版本 \(appVersion)"))
                 .foregroundStyle(.secondary)
 
-            Text("Private, local copy confirmation with useful next actions.")
+            Text(t(
+                "Private, local copy confirmation with useful next actions.",
+                "私密、本地的复制确认与实用后续操作。"
+            ))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -546,6 +761,10 @@ private struct AboutSettingsView: View {
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "2.0.0"
+            ?? "2.1.0"
+    }
+
+    private func t(_ english: String, _ chinese: String) -> String {
+        L10n.text(english, chinese, locale: settings.resolvedLocale)
     }
 }

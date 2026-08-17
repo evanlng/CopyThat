@@ -1,4 +1,4 @@
-# CopyThat（牛马）2.0.0
+# CopyThat（牛马）2.1.0
 
 ![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
@@ -39,6 +39,17 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **代码**：本地识别 Python、JavaScript、Swift、HTML、CSS、JSON、SQL 和 Bash。
 - **格式化**：JSON 和 Python 可在用户主动点击 **Format** 后预览并复制格式化结果。
 - **插件开关**：内容识别和操作按钮都是独立插件，可在设置中分别启用或关闭。
+- **中英文界面**：默认跟随 macOS 系统语言，也可在设置中固定为简体中文或 English，立即生效。
+- **插件安装管理**：内置内容插件和操作插件均可暂停、删除及重新安装；删除是可逆的，不下载或加载外部代码。
+
+### 2.1 多语言与插件管理
+
+2.1 增加“跟随系统 / 简体中文 / English”界面语言选项。跟随系统模式会读取
+macOS 首选语言，中文系统自动显示中文，其他语言环境使用英文。选择会保存在本地。
+
+插件设置分为“已安装内容插件”“已安装操作插件”和“可安装插件”。删除插件后，
+它不会再参与这次剪贴板分析，也不会生成操作按钮；重新安装会立即恢复并默认启用。
+这些都是 App 内置、经过编译的轻量模块，不会从网络下载代码，也不会扫描插件目录。
 
 ### 2.0 插件架构
 
@@ -97,7 +108,7 @@ Developer ID 签名和 Apple 公证。
 - 文本只短暂保留最多 1,000 个字符；文件最多读取 20 个 URL。
 - 图片仅生成最大 240 px 的临时缩略图，不写入磁盘或缓存。
 - 快速连续复制会复用同一个浮窗和 SwiftUI hosting view。
-- 2.0 Apple Silicon Release（含系统翻译接口）连续三次空闲采样均为 0.0% CPU，常驻内存约 25 MB。
+- 2.1 Apple Silicon Release 连续三次空闲采样均为 0.0% CPU，常驻内存约 18 MB、3 个线程。
 
 ### 已知限制
 
@@ -138,6 +149,20 @@ assistant that recognizes the copied content and offers the most useful next act
 - **Code**: locally detects Python, JavaScript, Swift, HTML, CSS, JSON, SQL, and Bash.
 - **Formatting**: JSON and Python can be reviewed and copied after the user clicks **Format**.
 - **Plugin controls**: content detectors and action buttons can be enabled independently.
+- **English and Chinese UI**: follows the macOS language by default, or can be fixed to Simplified Chinese or English with immediate updates.
+- **Plugin installation controls**: built-in content and action plugins can be paused, removed, and reinstalled. Removal is reversible and never downloads or loads external code.
+
+### 2.1 localization and plugin management
+
+CopyThat 2.1 adds System, Simplified Chinese, and English interface language
+options. System mode reads the preferred macOS language and uses English for
+other locales. The choice is stored locally.
+
+Plugin settings now separate installed content plugins, installed action
+plugins, and available plugins. Removed plugins no longer take part in analysis
+or create action buttons; reinstalling restores and enables them immediately.
+Every listed plugin is a small module compiled into the app. CopyThat does not
+download executable plugin code or scan plugin directories.
 
 ### 2.0 plugin architecture
 
@@ -202,7 +227,7 @@ The built product is `CopyThat.app`; its Simplified Chinese display name is “�
 - At most 1,000 text characters and 20 file URLs are retained for the short-lived HUD.
 - Images become temporary thumbnails no larger than 240 px and are never written to disk.
 - Rapid copies reuse the same panel and SwiftUI hosting view.
-- Three idle samples of the 2.0 Apple Silicon Release with the system translation interface reported 0.0% CPU and about 25 MB of memory.
+- Three idle samples of the 2.1 Apple Silicon Release reported 0.0% CPU, about 18 MB of memory, and three threads.
 
 ### Known limitation
 

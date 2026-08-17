@@ -14,20 +14,47 @@ enum ClipboardContentKind: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String {
+        title(in: .english)
+    }
+
+    func title(in locale: InterfaceLocale) -> String {
         switch self {
-        case .calculation: return "Calculator"
-        case .englishWord: return "English Dictionary"
-        case .chineseCharacter: return "Chinese Character"
-        case .link: return "Link"
-        case .phoneNumber: return "Phone Number"
-        case .emailAddress: return "Email Address"
-        case .code: return "Code"
-        case .files: return "Files"
-        case .image: return "Images"
+        case .calculation: return L10n.text("Calculator", "计算器", locale: locale)
+        case .englishWord: return L10n.text("English Dictionary", "英文词典", locale: locale)
+        case .chineseCharacter: return L10n.text("Chinese Character", "汉字释义", locale: locale)
+        case .link: return L10n.text("Link", "链接", locale: locale)
+        case .phoneNumber: return L10n.text("Phone Number", "电话号码", locale: locale)
+        case .emailAddress: return L10n.text("Email Address", "电子邮箱", locale: locale)
+        case .code: return L10n.text("Code", "代码", locale: locale)
+        case .files: return L10n.text("Files", "文件", locale: locale)
+        case .image: return L10n.text("Images", "图片", locale: locale)
         }
     }
 
     var subtitle: String { rawValue }
+
+    func detail(in locale: InterfaceLocale) -> String {
+        switch self {
+        case .calculation:
+            return L10n.text("Calculate bounded expressions locally.", "在本地计算有限长度的数学表达式。", locale: locale)
+        case .englishWord:
+            return L10n.text("Show English and Chinese word meanings.", "显示英文释义和中文词义。", locale: locale)
+        case .chineseCharacter:
+            return L10n.text("Show pinyin and a local definition.", "显示拼音和本地词典释义。", locale: locale)
+        case .link:
+            return L10n.text("Recognize web links, including www. addresses.", "识别网页链接，包括 www. 地址。", locale: locale)
+        case .phoneNumber:
+            return L10n.text("Recognize callable phone numbers.", "识别可以拨打的电话号码。", locale: locale)
+        case .emailAddress:
+            return L10n.text("Recognize email recipients.", "识别电子邮件收件人。", locale: locale)
+        case .code:
+            return L10n.text("Recognize supported code with local rules.", "使用本地规则识别支持的代码。", locale: locale)
+        case .files:
+            return L10n.text("Recognize copied Finder files.", "识别从访达复制的文件。", locale: locale)
+        case .image:
+            return L10n.text("Show a temporary image thumbnail.", "显示临时图片缩略图。", locale: locale)
+        }
+    }
 
     var symbolName: String {
         switch self {
@@ -58,33 +85,48 @@ enum ClipboardContent: Equatable {
     case other
 
     var title: String {
+        title(in: .english)
+    }
+
+    func title(in locale: InterfaceLocale) -> String {
         switch self {
         case .text:
-            return "Copied"
+            return L10n.text("Copied", "已复制", locale: locale)
         case .calculation:
-            return "Calculated"
+            return L10n.text("Calculated", "计算完成", locale: locale)
         case .englishWord:
-            return "Word found"
+            return L10n.text("Word found", "已找到单词", locale: locale)
         case .chineseCharacter:
-            return "Chinese character copied"
+            return L10n.text("Chinese character copied", "已复制汉字", locale: locale)
         case .link:
-            return "Link copied"
+            return L10n.text("Link copied", "链接已复制", locale: locale)
         case .phoneNumber:
-            return "Phone number copied"
+            return L10n.text("Phone number copied", "电话号码已复制", locale: locale)
         case .emailAddress:
-            return "Email copied"
+            return L10n.text("Email copied", "邮箱已复制", locale: locale)
         case .code:
-            return "Code copied"
+            return L10n.text("Code copied", "代码已复制", locale: locale)
         case .files(_, let totalCount):
-            return totalCount == 1 ? "File copied" : "\(totalCount) files copied"
+            if totalCount == 1 {
+                return L10n.text("File copied", "文件已复制", locale: locale)
+            }
+            return L10n.text(
+                "\(totalCount) files copied",
+                "已复制 \(totalCount) 个文件",
+                locale: locale
+            )
         case .image:
-            return "Image copied"
+            return L10n.text("Image copied", "图片已复制", locale: locale)
         case .other:
-            return "Item copied"
+            return L10n.text("Item copied", "项目已复制", locale: locale)
         }
     }
 
     var preview: String? {
+        preview(in: .english)
+    }
+
+    func preview(in locale: InterfaceLocale) -> String? {
         switch self {
         case .text(let text):
             return TextPreview.make(text)
@@ -104,10 +146,18 @@ enum ClipboardContent: Equatable {
             return preview
         case .files(let urls, let totalCount):
             let names = urls.prefix(2).map(\.lastPathComponent)
-            let suffix = totalCount > 2 ? " +\(totalCount - 2) more" : ""
+            let suffix = totalCount > 2
+                ? L10n.text(
+                    " +\(totalCount - 2) more",
+                    "，另有 \(totalCount - 2) 个",
+                    locale: locale
+                )
+                : ""
             return names.joined(separator: ", ") + suffix
         case .image(let thumbnail):
-            return thumbnail == nil ? "Ready to paste" : nil
+            return thumbnail == nil
+                ? L10n.text("Ready to paste", "可以粘贴", locale: locale)
+                : nil
         case .other:
             return nil
         }
@@ -150,13 +200,17 @@ enum ClipboardContent: Equatable {
 
     func primaryAction(
         using searchProvider: WebSearchProvider? = .duckDuckGo,
+        locale: InterfaceLocale = .english,
         enabledPluginIDs: Set<ClipboardActionPluginID> = Set(
             ClipboardActionPluginID.allCases
         )
     ) -> ClipboardActionDescriptor? {
         ClipboardActionRegistry.builtIn.primaryAction(
             for: self,
-            context: ClipboardPluginContext(searchProvider: searchProvider),
+            context: ClipboardPluginContext(
+                searchProvider: searchProvider,
+                locale: locale
+            ),
             enabledPluginIDs: enabledPluginIDs
         )
     }

@@ -5,7 +5,7 @@ import SwiftUI
 final class PluginReferenceWindowManager: NSObject, NSWindowDelegate {
     private var window: NSWindow?
 
-    func show(_ reference: ClipboardReference) {
+    func show(_ reference: ClipboardReference, locale: InterfaceLocale) {
         window?.close()
 
         let window = NSWindow(
@@ -14,11 +14,12 @@ final class PluginReferenceWindowManager: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Character Details"
+        window.title = L10n.text("Character Details", "汉字详情", locale: locale)
         window.delegate = self
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(
             rootView: PluginReferenceView(reference: reference)
+                .environment(\.locale, locale.locale)
         )
         window.center()
         window.setFrameAutosaveName("PluginReferenceWindow")

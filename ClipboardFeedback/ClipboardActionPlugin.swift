@@ -15,15 +15,19 @@ enum ClipboardActionPluginID: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: String {
+        title(in: .english)
+    }
+
+    func title(in locale: InterfaceLocale) -> String {
         switch self {
-        case .search: return "Search"
-        case .openSafari: return "Open in Safari"
-        case .call: return "Call"
-        case .composeEmail: return "Compose Email"
-        case .revealInFinder: return "Show in Finder"
-        case .formatCode: return "Format Code"
-        case .copyCalculation: return "Copy Result"
-        case .characterDetails: return "Character Details"
+        case .search: return L10n.text("Search", "搜索", locale: locale)
+        case .openSafari: return L10n.text("Open in Safari", "在 Safari 中打开", locale: locale)
+        case .call: return L10n.text("Call", "拨打电话", locale: locale)
+        case .composeEmail: return L10n.text("Compose Email", "撰写邮件", locale: locale)
+        case .revealInFinder: return L10n.text("Show in Finder", "在访达中显示", locale: locale)
+        case .formatCode: return L10n.text("Format Code", "格式化代码", locale: locale)
+        case .copyCalculation: return L10n.text("Copy Result", "复制结果", locale: locale)
+        case .characterDetails: return L10n.text("Character Details", "汉字详情", locale: locale)
         }
     }
 
@@ -41,29 +45,34 @@ enum ClipboardActionPluginID: String, CaseIterable, Identifiable {
     }
 
     var subtitle: String {
+        subtitle(in: .english)
+    }
+
+    func subtitle(in locale: InterfaceLocale) -> String {
         switch self {
         case .search:
-            return "Show Search for ordinary copied text."
+            return L10n.text("Show Search for ordinary copied text.", "为普通文字显示搜索按钮。", locale: locale)
         case .openSafari:
-            return "Show Open Safari when a link is recognized."
+            return L10n.text("Show Open Safari when a link is recognized.", "识别链接后显示 Safari 打开按钮。", locale: locale)
         case .call:
-            return "Show Call when a phone number is recognized."
+            return L10n.text("Show Call when a phone number is recognized.", "识别电话号码后显示拨打按钮。", locale: locale)
         case .composeEmail:
-            return "Show Compose when an email address is recognized."
+            return L10n.text("Show Compose when an email address is recognized.", "识别邮箱后显示撰写邮件按钮。", locale: locale)
         case .revealInFinder:
-            return "Show copied files in Finder."
+            return L10n.text("Show copied files in Finder.", "在访达中定位复制的文件。", locale: locale)
         case .formatCode:
-            return "Show Format for supported JSON and Python code."
+            return L10n.text("Show Format for supported JSON and Python code.", "为支持的 JSON 和 Python 代码显示格式化按钮。", locale: locale)
         case .copyCalculation:
-            return "Show Copy Result. Calculations still display when this is off."
+            return L10n.text("Show Copy Result. Calculations still display when this is off.", "显示复制结果按钮；关闭后仍会显示计算结果。", locale: locale)
         case .characterDetails:
-            return "Show a separate full definition window. Pinyin still displays when off."
+            return L10n.text("Show a separate full definition window. Pinyin still displays when off.", "显示完整释义窗口；关闭后拼音仍会自动显示。", locale: locale)
         }
     }
 }
 
 struct ClipboardPluginContext {
     let searchProvider: WebSearchProvider?
+    let locale: InterfaceLocale
 }
 
 /// Action plugins convert analyzed content into a single user-invoked action.
@@ -122,7 +131,7 @@ private struct SearchActionPlugin: ClipboardActionPlugin {
             return nil
         }
         return ClipboardActionDescriptor(
-            title: "Search",
+            title: id.title(in: context.locale),
             systemImage: id.symbolName,
             target: .external(
                 .openInApplication(
@@ -143,7 +152,7 @@ private struct OpenSafariActionPlugin: ClipboardActionPlugin {
     ) -> ClipboardActionDescriptor? {
         guard case .link(let url) = content else { return nil }
         return ClipboardActionDescriptor(
-            title: "Open Safari",
+            title: L10n.text("Open Safari", "打开 Safari", locale: context.locale),
             systemImage: id.symbolName,
             target: .external(
                 .openInApplication(
@@ -165,7 +174,7 @@ private struct CallActionPlugin: ClipboardActionPlugin {
         guard case .phoneNumber(_, let normalized) = content,
               let url = URL(string: "tel:\(normalized)") else { return nil }
         return ClipboardActionDescriptor(
-            title: "Call",
+            title: id.title(in: context.locale),
             systemImage: id.symbolName,
             target: .external(.openDefault(url))
         )
@@ -185,7 +194,7 @@ private struct ComposeEmailActionPlugin: ClipboardActionPlugin {
               ),
               let url = URL(string: "mailto:\(encoded)") else { return nil }
         return ClipboardActionDescriptor(
-            title: "Compose",
+            title: L10n.text("Compose", "写邮件", locale: context.locale),
             systemImage: id.symbolName,
             target: .external(.openDefault(url))
         )
@@ -201,7 +210,7 @@ private struct RevealInFinderActionPlugin: ClipboardActionPlugin {
     ) -> ClipboardActionDescriptor? {
         guard case .files(let urls, _) = content, !urls.isEmpty else { return nil }
         return ClipboardActionDescriptor(
-            title: "Show in Finder",
+            title: id.title(in: context.locale),
             systemImage: id.symbolName,
             target: .external(.revealInFinder(urls))
         )
@@ -218,7 +227,7 @@ private struct FormatCodeActionPlugin: ClipboardActionPlugin {
         guard case .code(let language, _, .some(let source)) = content,
               language.supportsBasicFormatting else { return nil }
         return ClipboardActionDescriptor(
-            title: "Format",
+            title: L10n.text("Format", "格式化", locale: context.locale),
             systemImage: id.symbolName,
             target: .formatCode(language: language, source: source)
         )
@@ -234,7 +243,7 @@ private struct CopyCalculationActionPlugin: ClipboardActionPlugin {
     ) -> ClipboardActionDescriptor? {
         guard case .calculation(_, let result) = content else { return nil }
         return ClipboardActionDescriptor(
-            title: "Copy Result",
+            title: id.title(in: context.locale),
             systemImage: id.symbolName,
             target: .copyText(result)
         )
@@ -254,13 +263,17 @@ private struct CharacterDetailsActionPlugin: ClipboardActionPlugin {
             let definition
         ) = content else { return nil }
         return ClipboardActionDescriptor(
-            title: "Details",
+            title: L10n.text("Details", "详情", locale: context.locale),
             systemImage: id.symbolName,
             target: .showReference(
                 ClipboardReference(
                     title: character,
                     subtitle: pinyin,
-                    body: definition ?? "No local dictionary definition was found."
+                    body: definition ?? L10n.text(
+                        "No local dictionary definition was found.",
+                        "未找到本地词典释义。",
+                        locale: context.locale
+                    )
                 )
             )
         )

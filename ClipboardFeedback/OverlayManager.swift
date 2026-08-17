@@ -65,8 +65,10 @@ final class OverlayManager {
             usesNativeGlassBackground: usesNativeGlass,
             primaryAction: content.primaryAction(
                 using: settings.activeSearchProvider,
+                locale: settings.resolvedLocale,
                 enabledPluginIDs: settings.enabledActionPluginIDs
-            )
+            ),
+            locale: settings.resolvedLocale
         ) { action in
             self.perform(action)
         } onHoverChanged: { [weak self] hovering in
@@ -122,13 +124,20 @@ final class OverlayManager {
     private func perform(_ action: ClipboardActionDescriptor) {
         switch action.target {
         case .formatCode(let language, let source):
-            formatterWindowManager.show(language: language, source: source)
+            formatterWindowManager.show(
+                language: language,
+                source: source,
+                locale: SettingsManager.shared.resolvedLocale
+            )
         case .copyText(let text):
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(text, forType: .string)
         case .showReference(let reference):
-            referenceWindowManager.show(reference)
+            referenceWindowManager.show(
+                reference,
+                locale: SettingsManager.shared.resolvedLocale
+            )
         case .external:
             ClipboardActionExecutor.perform(action)
         }
