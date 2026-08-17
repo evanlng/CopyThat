@@ -1,121 +1,193 @@
 # CopyThat（牛马）1.5.0
 
-![CopyThat — Copy with confidence](marketing/CopyThat-Hero.png)
+![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
-A lightweight native macOS menu bar app that confirms clipboard updates with a
-non-activating floating panel and offers safe, context-aware next actions.
+**CopyThat** is a lightweight native macOS copy-feedback assistant.<br>
+**牛马**是一款轻量的 macOS 原生复制反馈助手。
 
-**CopyThat** is the English product name. On a Simplified Chinese macOS system,
-the localized app name is **牛马**.
+[简体中文](#简体中文) · [English](#english)
 
-## Requirements
+---
+
+## 简体中文
+
+### 为什么做 CopyThat？
+
+这个项目最初源于一个很简单的烦恼：在 Mac 上按下 `Command + C`
+之后，偶尔会遇到复制没有生效的情况。
+
+系统没有明显反馈，所以在粘贴之前，很难确定内容到底有没有复制成功。
+CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，立即显示一个轻量浮窗，
+让我一眼确认刚才的内容确实复制成功了。
+
+继续开发后，我发现复制之后通常还有下一步操作。于是 CopyThat 从单纯的
+“复制成功提醒”，逐渐变成了一个轻量的复制助手：确认复制成功，并根据复制内容
+提供刚刚好的下一步操作。
+
+### 可以做什么？
+
+- **复制反馈**：剪贴板更新后立即显示不抢焦点的 Liquid Glass 浮窗。
+- **链接**：识别 `http://`、`https://` 和 `www.` 开头的地址，点击即可使用 Safari 打开。
+- **文字**：点击 **Search**，使用 DuckDuckGo、Bing、百度、Google 或自定义搜索引擎搜索。
+- **电话号码**：点击 **Call**，交给 macOS 的 `tel:` 处理程序拨打。
+- **邮箱地址**：点击 **Compose**，打开默认邮件 App 并自动填入收件人。
+- **Finder 文件**：点击 **Show in Finder**，直接显示文件所在位置。
+- **图片**：显示临时低分辨率缩略图，浮窗关闭后立即释放。
+- **代码**：本地识别 Python、JavaScript、Swift、HTML、CSS、JSON、SQL 和 Bash。
+- **格式化**：JSON 和 Python 可在用户主动点击 **Format** 后预览并复制格式化结果。
+- **自定义检测**：可在设置中分别启用或关闭不同内容类型。
+
+### 它不是什么？
+
+CopyThat **不是剪贴板历史管理器**：
+
+- 不保存复制历史
+- 不建立剪贴板数据库
+- 不上传剪贴板内容
+- 不记录剪贴板原文
+- 不包含统计、遥测或自动更新服务
+
+所有内容识别均在 Mac 本地完成。只有当你主动点击 **Search**、**Open Safari**、
+**Call** 或其他外部操作时，对应内容才会交给系统 App 或你选择的搜索引擎。
+
+### 下载与安装
+
+1. 从 [最新 Release](https://github.com/evanlng/CopyThat/releases/latest) 下载 `CopyThat.dmg`。
+2. 打开 DMG，将 `CopyThat.app` 拖入“应用程序”文件夹。
+3. 从“应用程序”启动 CopyThat；它只显示在菜单栏，不会出现在 Dock。
+
+当前安装包使用临时签名，尚未经过 Apple 公证。首次启动时，macOS 可能要求你按住
+Control 点击应用并选择“打开”。免除此步骤需要 Apple Developer Program、
+Developer ID 签名和 Apple 公证。
+
+### 系统要求
+
+- macOS 14 或更高版本
+- Apple Silicon Mac（arm64）
+- 从源码构建需要 Xcode 27 beta 或更高版本
+- 无第三方依赖
+
+### 从源码运行
+
+1. 使用 Xcode 打开 `ClipboardFeedback.xcodeproj`。
+2. 选择 `ClipboardFeedback` scheme 和 **My Mac**。
+3. 点击 Run。
+
+最终产品名称是 `CopyThat.app`；简体中文系统中显示为“牛马”。
+
+### 性能与隐私设计
+
+- `ClipboardMonitor` 只检查 `NSPasteboard.changeCount`，正常间隔为 250 ms；
+  复制后短时间切换为 80 ms，并在 2.4 秒后恢复。
+- Timer tolerance 允许 macOS 合并唤醒；暂停反馈时计时器会完全停止。
+- 只有剪贴板变化后才进行一次有界分析，不持续处理内容。
+- 文本只短暂保留最多 1,000 个字符；文件最多读取 20 个 URL。
+- 图片仅生成最大 240 px 的临时缩略图，不写入磁盘或缓存。
+- 快速连续复制会复用同一个浮窗和 SwiftUI hosting view。
+- 最终 Apple Silicon Release 的空闲采样均为 0.0% CPU，内存约 25 MB。
+
+### 已知限制
+
+当前版本确认的是“系统剪贴板已经发生变化”。它不会全局监听 `Command + C`，
+因此无法直接弹出“复制失败”提示。未来若加入该功能，需要单独的键盘事件监听，
+并由用户授予输入监控或辅助功能权限。
+
+---
+
+## English
+
+### Why CopyThat?
+
+CopyThat started with a small but recurring frustration: after pressing
+`Command + C` on a Mac, a copy action would occasionally appear to do nothing.
+
+macOS provides no obvious confirmation, so it is difficult to know whether the
+clipboard was actually updated until you try to paste. The original goal of
+CopyThat was simple: show a lightweight floating HUD whenever a clipboard update
+succeeds, making successful copies immediately visible.
+
+While building it, I realized that copying is often only the first step.
+CopyThat therefore evolved from a copy-confirmation indicator into a lightweight
+assistant that recognizes the copied content and offers the most useful next action.
+
+### What can it do?
+
+- **Copy feedback**: shows a non-activating Liquid Glass HUD after a clipboard update.
+- **Links**: recognizes `http://`, `https://`, and `www.` addresses and opens them in Safari.
+- **Text**: searches with DuckDuckGo, Bing, Baidu, Google, or a custom search engine.
+- **Phone numbers**: hands the number to the macOS `tel:` handler through **Call**.
+- **Email addresses**: opens the default mail app with the recipient filled in through **Compose**.
+- **Finder files**: reveals copied files through **Show in Finder**.
+- **Images**: displays a temporary low-resolution thumbnail and releases it with the HUD.
+- **Code**: locally detects Python, JavaScript, Swift, HTML, CSS, JSON, SQL, and Bash.
+- **Formatting**: JSON and Python can be reviewed and copied after the user clicks **Format**.
+- **Configurable detection**: each smart content type can be enabled or disabled separately.
+
+### What is it not?
+
+CopyThat is **not a clipboard manager**:
+
+- It does not save clipboard history.
+- It does not create a clipboard database.
+- It does not upload clipboard contents.
+- It does not log copied text.
+- It contains no analytics, telemetry, or update service.
+
+All content detection runs locally. Copied data is handed to another app or a
+search engine only after you explicitly click an external action such as
+**Search**, **Open Safari**, or **Call**.
+
+### Download and install
+
+1. Download `CopyThat.dmg` from the [latest release](https://github.com/evanlng/CopyThat/releases/latest).
+2. Open the DMG and drag `CopyThat.app` into Applications.
+3. Launch CopyThat from Applications. It appears only in the menu bar and has no Dock icon.
+
+The current build is ad-hoc signed and has not been notarized by Apple. On first
+launch, macOS may require Control-clicking the app and choosing **Open**. Removing
+that step requires Apple Developer Program membership, Developer ID signing, and
+Apple notarization.
+
+### Requirements
 
 - macOS 14 or later
 - Apple Silicon Mac (arm64)
-- Xcode 27 beta or later (required for the native Icon Composer app icon)
-- No third-party packages
+- Xcode 27 beta or later when building from source
+- No third-party dependencies
 
-## Open and run
+### Run from source
 
 1. Open `ClipboardFeedback.xcodeproj` in Xcode.
-2. Select the `ClipboardFeedback` scheme and **My Mac** destination.
+2. Select the `ClipboardFeedback` scheme and **My Mac**.
 3. Press Run.
 
-The built product is `CopyThat.app`. It appears only in the menu bar and
-intentionally has no Dock icon.
+The built product is `CopyThat.app`; its Simplified Chinese display name is “牛马”.
 
-## Install a GitHub Release
+### Performance and privacy design
 
-1. Open `CopyThat.dmg`.
-2. Drag `CopyThat.app` into the Applications folder.
-3. Open CopyThat from Applications.
+- `ClipboardMonitor` checks only `NSPasteboard.changeCount`: every 250 ms normally,
+  briefly every 80 ms after a copy, then back to normal after 2.4 seconds.
+- Timer tolerance lets macOS coalesce wakeups, and pausing feedback stops the timer.
+- Content analysis runs once, and only after the clipboard changes.
+- At most 1,000 text characters and 20 file URLs are retained for the short-lived HUD.
+- Images become temporary thumbnails no larger than 240 px and are never written to disk.
+- Rapid copies reuse the same panel and SwiftUI hosting view.
+- Final Apple Silicon Release samples reported 0.0% idle CPU and about 25 MB of memory.
 
-The current downloadable build is ad-hoc signed because this project does not
-yet have a `Developer ID Application` certificate. On first launch, macOS may
-require Control-clicking the app and choosing **Open**. A public release without
-that step requires Apple Developer Program membership, Developer ID signing,
-and Apple notarization.
+### Known limitation
 
-## Privacy and permissions
+This version confirms that the system pasteboard changed. It does not globally
+observe `Command + C`, so it cannot explicitly display “Copy failed.” A future
+implementation would require a separate keyboard event monitor and user-granted
+Input Monitoring or Accessibility permission.
 
-- Clipboard contents are inspected locally and never sent over the network.
-- Clipboard contents are not logged or stored as history.
-- The app target uses App Sandbox without the outgoing-network entitlement.
-  The app contains no update checker, telemetry, external plugin runtime, or
-  script execution.
-- No Accessibility, Input Monitoring, or Screen Recording permission is needed
-  for the MVP because it observes `NSPasteboard.changeCount` rather than global
-  keyboard events.
-- **Launch at Login** uses `SMAppService`. For reliable registration, place a
-  signed build in `/Applications`. macOS may show it under **System Settings →
-  General → Login Items**.
+---
 
-## Behavior and architecture
+## Core modules / 核心模块
 
-- `ClipboardMonitor` checks only `NSPasteboard.changeCount`. It polls every 250 ms
-  normally, briefly switches to 80 ms after a copy, and returns to the normal
-  interval after 2.4 seconds. Timer tolerance lets macOS coalesce wakeups.
-  Pausing feedback stops the timer completely.
-- `ClipboardAnalyzer` performs one bounded inspection only after `changeCount`
-  changes. It retains at most 1,000 text characters and 20 file URLs for the
-  short-lived HUD; there is no history or database.
-- Shows text, link, phone number, email address, file, image, code, or generic feedback.
-- Prefers the semantic pasteboard URL type, then recognizes full `http://` and
-  `https://` strings. Addresses beginning with `www.` are normalized to HTTPS.
-- Uses a compile-time detector plugin protocol and one audited action interface.
-  Built-in actions open links in Safari, call phone numbers through
-  the system `tel:` handler, compose email through `mailto:`, and reveal files
-  in Finder. Actions run only after the user clicks the toast button.
-- Ordinary copied text includes a **Search** action that opens the query in Safari.
-  DuckDuckGo is the default; Bing, Baidu, Google, and a custom search URL template
-  are available in General settings. Custom templates use one `{query}` placeholder
-  inside an `http://` or `https://` query parameter. No text leaves the app unless
-  the user clicks Search.
-- Includes a Detection settings tab where each smart content type can be enabled
-  or disabled independently.
-- Image copies are decoded directly into a temporary thumbnail no larger than
-  240 pixels. The original image is never cached or written, and the thumbnail
-  is released when the HUD disappears.
-- Developer Mode recognizes Python, JavaScript, Swift, HTML, CSS, JSON, SQL, and
-  Bash using bounded local rules. It does not use AI, a compiler, or the network.
-- JSON and Python show a **Format** button. Formatting opens a review window and
-  changes the pasteboard only after **Copy formatted** is clicked. Python's first
-  version is deliberately conservative: it preserves indentation while cleaning
-  line endings and trailing whitespace outside triple-quoted strings.
-- Reuses one panel and its hosting view during rapid copies, reducing allocation
-  churn while resetting the 1.8-second dismissal timer.
-- Pauses dismissal while the pointer is over the panel, so link actions remain usable.
-- Positions the panel at the exact horizontal center near the top of the display
-  containing the mouse pointer, away from Notification Center.
-- On macOS 26 and later, the floating `NSPanel` hosts the same public SwiftUI
-  `glassEffect` API used by the settings preview. It does not stack
-  `NSVisualEffectView`, SwiftUI Material, a surface fill, or a custom blur over
-  native Liquid Glass. The system Material fallback is used only on macOS 14–15
-  or when Reduce Transparency is enabled.
-- General settings exposes three aligned slider positions backed by one snapped
-  value: **Clear** maps to native `Glass.clear`, **Balanced** maps to native
-  `Glass.regular`, and **Strong** uses native `Glass.regular` with a subtle
-  semantic tint. Clear never receives a tint or surface fill. The slider and its
-  three labels share the same full-width layout so their positions stay aligned.
-- Native Clear glass intentionally remains adaptive: macOS may retain some
-  diffusion for legibility, especially over white or high-contrast content.
-  Refraction and interactive response are more apparent over varied backgrounds
-  and while the pointer moves; the app does not replace that system behavior with
-  a fake zero-blur surface.
-- Includes adaptive mascot artwork: the light appearance uses the white cow icon,
-  while the dark appearance uses the night horse icon.
-- Never modifies the pasteboard when performing an external action.
-
-## Measured performance baselines
-
-The final CopyThat 1.5.0 Apple Silicon Release was sampled five times over 10
-seconds. Every idle CPU sample reported 0.0%; memory remained approximately 25
-MB with four to five threads. The HUD applies one native glass effect only while
-visible, and the settings slider performs no background work.
-
-## Known limitation
-
-This version confirms that the pasteboard changed. It does not observe Command+C,
-so it cannot report a failed copy attempt. That future feature would require a
-separate global event monitor and user-granted Input Monitoring or Accessibility
-permission.
+- `ClipboardMonitor` — pasteboard change detection / 剪贴板变化检测
+- `ClipboardAnalyzer` — bounded content analysis / 有界内容分析
+- `ContentDetectionPlugin` — local detector interface / 本地检测接口
+- `OverlayManager` and `OverlayView` — floating HUD / 浮窗管理与界面
+- `SettingsManager` and `SettingsView` — preferences / 设置管理
+- `CodeDetector` and `CodeFormatter` — local code tools / 本地代码工具
