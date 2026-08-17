@@ -1,0 +1,24 @@
+{
+  "action" : {
+    "title" : {
+      "en" : "Find Place",
+      "zh-Hans" : "查找位置"
+    },
+    "type" : "openURL",
+    "urlTemplate" : "https://maps.apple.com/?q={content}"
+  },
+  "description" : {
+    "en" : "Search copied text in Apple Maps.",
+    "zh-Hans" : "在 Apple 地图中搜索复制的文字。"
+  },
+  "identifier" : "com.copythat.example.maps",
+  "matches" : [
+    "text"
+  ],
+  "name" : {
+    "en" : "Apple Maps Search",
+    "zh-Hans" : "Apple 地图搜索"
+  },
+  "schemaVersion" : 1,
+  "systemImage" : "map"
+}

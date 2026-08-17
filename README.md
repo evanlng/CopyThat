@@ -1,4 +1,4 @@
-# CopyThat（牛马）2.1.0
+# CopyThat（牛马）2.2.0
 
 ![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
@@ -40,7 +40,20 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **格式化**：JSON 和 Python 可在用户主动点击 **Format** 后预览并复制格式化结果。
 - **插件开关**：内容识别和操作按钮都是独立插件，可在设置中分别启用或关闭。
 - **中英文界面**：默认跟随 macOS 系统语言，也可在设置中固定为简体中文或 English，立即生效。
-- **插件安装管理**：内置内容插件和操作插件均可暂停、删除及重新安装；删除是可逆的，不下载或加载外部代码。
+- **插件安装管理**：内置插件可暂停、删除及重新安装；也可从“插件”设置页导入轻量的 `.copythatplugin` 操作插件。
+
+### 2.2 外部插件安装入口
+
+2.2 在“插件”设置页增加 **安装插件…**。当前外部插件是一份最大 64 KB 的
+JSON 清单，只能声明“匹配哪些内容”和“用户点击按钮后打开哪个 HTTPS 地址”。
+它不能包含或执行 Swift、脚本、动态库和后台服务，也不会获得剪贴板读取权限。
+
+安装时 CopyThat 会检查格式版本、反向域名标识符、文字长度、内容类型，以及 URL
+是否为 HTTPS。`{content}` 只能放在一个查询参数值里，并由系统安全编码。插件只在
+剪贴板变化后对已分析好的短内容匹配一次；空闲时不扫描插件目录、不轮询，也不联网。
+
+仓库中的 [`OpenInMaps.copythatplugin`](Examples/OpenInMaps.copythatplugin) 是可直接导入的示例。
+多个外部插件同时匹配时，列表中排在最前且已启用的插件提供浮窗按钮；最新安装的排在最前。
 
 ### 2.1 多语言与插件管理
 
@@ -108,7 +121,7 @@ Developer ID 签名和 Apple 公证。
 - 文本只短暂保留最多 1,000 个字符；文件最多读取 20 个 URL。
 - 图片仅生成最大 240 px 的临时缩略图，不写入磁盘或缓存。
 - 快速连续复制会复用同一个浮窗和 SwiftUI hosting view。
-- 2.1 Apple Silicon Release 连续三次空闲采样均为 0.0% CPU，常驻内存约 18 MB、3 个线程。
+- 2.2 Apple Silicon Release 空闲采样为 0.0% CPU，实际物理内存约 18 MB；外部插件目录只在启动时读取一次。
 
 ### 已知限制
 
@@ -150,7 +163,25 @@ assistant that recognizes the copied content and offers the most useful next act
 - **Formatting**: JSON and Python can be reviewed and copied after the user clicks **Format**.
 - **Plugin controls**: content detectors and action buttons can be enabled independently.
 - **English and Chinese UI**: follows the macOS language by default, or can be fixed to Simplified Chinese or English with immediate updates.
-- **Plugin installation controls**: built-in content and action plugins can be paused, removed, and reinstalled. Removal is reversible and never downloads or loads external code.
+- **Plugin installation controls**: built-in plugins can be paused, removed, and reinstalled; lightweight `.copythatplugin` action manifests can also be imported from the Plugins settings page.
+
+### 2.2 external plugin installation
+
+CopyThat 2.2 adds **Install Plugin…** to the Plugins settings page. An external
+plugin is a JSON manifest no larger than 64 KB. It can only declare which content
+types it matches and an HTTPS URL to open after the user clicks its HUD button.
+It cannot contain or execute Swift, scripts, dynamic libraries, or background services,
+and it receives no direct clipboard access.
+
+CopyThat validates the schema version, reverse-domain identifier, text lengths,
+content types, and HTTPS template during installation. `{content}` is permitted in
+exactly one query value and is safely encoded by the system. Plugins match already
+analyzed short content once after a clipboard update; there is no idle directory
+polling, network request, or helper process.
+
+[`OpenInMaps.copythatplugin`](Examples/OpenInMaps.copythatplugin) is an importable example.
+When multiple imported plugins match, the first enabled one in the list supplies the HUD action;
+the most recently installed plugin appears first.
 
 ### 2.1 localization and plugin management
 
@@ -227,7 +258,7 @@ The built product is `CopyThat.app`; its Simplified Chinese display name is “�
 - At most 1,000 text characters and 20 file URLs are retained for the short-lived HUD.
 - Images become temporary thumbnails no larger than 240 px and are never written to disk.
 - Rapid copies reuse the same panel and SwiftUI hosting view.
-- Three idle samples of the 2.1 Apple Silicon Release reported 0.0% CPU, about 18 MB of memory, and three threads.
+- The 2.2 Apple Silicon Release idle sample reported 0.0% CPU and an 18 MB physical footprint; the external plugin directory is read only once at launch.
 
 ### Known limitation
 

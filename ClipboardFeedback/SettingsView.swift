@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ClipboardFeedbackSettingsView: View {
     @ObservedObject var settings: SettingsManager
@@ -439,6 +440,7 @@ struct GlassStyleSliderGeometry {
 
 private struct DetectionSettingsView: View {
     @ObservedObject var settings: SettingsManager
+    @State private var pluginMessage: String?
 
     private var installedDetectionKinds: [ClipboardContentKind] {
         ClipboardContentKind.allCases.filter(settings.isDetectionInstalled)
@@ -459,6 +461,76 @@ private struct DetectionSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+                Text(t("Install a Plugin", "安装插件"))
+                    .font(.title3.weight(.semibold))
+
+                HStack(spacing: 14) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 20))
+                        .foregroundStyle(.blue)
+                        .frame(width: 28)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(t("Import a CopyThat plugin", "导入 CopyThat 插件"))
+                            .font(.system(size: 14, weight: .medium))
+                        Text(t(
+                            "Choose a .copythatplugin file. Imported plugins are data-only HTTPS actions and never run third-party code.",
+                            "选择 .copythatplugin 文件。导入插件只包含 HTTPS 操作数据，不会运行第三方代码。"
+                        ))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+
+                    Spacer()
+
+                    Button(action: choosePlugin) {
+                        Label(t("Install Plugin…", "安装插件…"), systemImage: "plus")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+                .padding(16)
+                .background(
+                    Color(nsColor: .controlBackgroundColor).opacity(0.72),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
+
+                if !settings.installedDeclarativePlugins.isEmpty {
+                    Text(t("Imported Plugins", "已导入插件"))
+                        .font(.title3.weight(.semibold))
+                        .padding(.top, 8)
+
+                    Text(t(
+                        "The first enabled imported plugin that matches copied content supplies the HUD button.",
+                        "第一个匹配复制内容的已启用导入插件会提供浮窗按钮。"
+                    ))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    VStack(spacing: 0) {
+                        ForEach(settings.installedDeclarativePlugins) { plugin in
+                            InstalledDeclarativePluginRow(
+                                plugin: plugin,
+                                locale: settings.resolvedLocale,
+                                isEnabled: Binding(
+                                    get: { settings.isDeclarativePluginEnabled(plugin) },
+                                    set: { settings.setDeclarativePlugin(plugin, enabled: $0) }
+                                ),
+                                uninstall: { uninstall(plugin) }
+                            )
+
+                            if plugin != settings.installedDeclarativePlugins.last {
+                                Divider().padding(.leading, 46)
+                            }
+                        }
+                    }
+                    .background(
+                        Color(nsColor: .controlBackgroundColor).opacity(0.72),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    )
+                }
+
                 Text(t("Installed Content Plugins", "已安装的内容插件"))
                     .font(.title3.weight(.semibold))
 
@@ -586,10 +658,112 @@ private struct DetectionSettingsView: View {
             }
             .padding(24)
         }
+        .alert(
+            t("Plugin Installation", "插件安装"),
+            isPresented: Binding(
+                get: { pluginMessage != nil },
+                set: { if !$0 { pluginMessage = nil } }
+            )
+        ) {
+            Button(t("OK", "好"), role: .cancel) {}
+        } message: {
+            Text(pluginMessage ?? "")
+        }
+    }
+
+    private func choosePlugin() {
+        let panel = NSOpenPanel()
+        panel.title = t("Install a CopyThat Plugin", "安装 CopyThat 插件")
+        panel.prompt = t("Install", "安装")
+        panel.message = t(
+            "Select a trusted .copythatplugin manifest.",
+            "请选择可信的 .copythatplugin 清单文件。"
+        )
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [
+            UTType(filenameExtension: "copythatplugin") ?? .json,
+            .json
+        ]
+
+        guard panel.runModal() == .OK, let sourceURL = panel.url else { return }
+        do {
+            let plugin = try settings.installDeclarativePlugin(from: sourceURL)
+            pluginMessage = t(
+                "Installed \(plugin.displayName(in: settings.resolvedLocale)).",
+                "已安装 \(plugin.displayName(in: settings.resolvedLocale))。"
+            )
+        } catch {
+            pluginMessage = t(
+                "The plugin could not be installed: \(error.localizedDescription)",
+                "无法安装插件：\(error.localizedDescription)"
+            )
+        }
+    }
+
+    private func uninstall(_ plugin: DeclarativePluginManifest) {
+        do {
+            try settings.uninstallDeclarativePlugin(plugin)
+        } catch {
+            pluginMessage = t(
+                "The plugin could not be removed: \(error.localizedDescription)",
+                "无法删除插件：\(error.localizedDescription)"
+            )
+        }
     }
 
     private func t(_ english: String, _ chinese: String) -> String {
         L10n.text(english, chinese, locale: settings.resolvedLocale)
+    }
+}
+
+private struct InstalledDeclarativePluginRow: View {
+    let plugin: DeclarativePluginManifest
+    let locale: InterfaceLocale
+    @Binding var isEnabled: Bool
+    let uninstall: () -> Void
+
+    var body: some View {
+        HStack(spacing: 13) {
+            Image(systemName: plugin.resolvedSystemImage)
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(plugin.displayName(in: locale))
+                        .font(.system(size: 14, weight: .medium))
+                    Text(L10n.text("Imported", "已导入", locale: locale))
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.secondary.opacity(0.1), in: Capsule())
+                }
+                Text(plugin.displayDescription(in: locale))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+
+            Toggle("", isOn: $isEnabled)
+                .labelsHidden()
+
+            Button(role: .destructive, action: uninstall) {
+                Label(
+                    L10n.text("Remove", "删除", locale: locale),
+                    systemImage: "trash"
+                )
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
     }
 }
 
@@ -761,7 +935,7 @@ private struct AboutSettingsView: View {
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "2.1.0"
+            ?? "2.2.0"
     }
 
     private func t(_ english: String, _ chinese: String) -> String {

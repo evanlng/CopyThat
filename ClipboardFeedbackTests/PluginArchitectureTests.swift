@@ -102,6 +102,59 @@ final class PluginArchitectureTests: XCTestCase {
         )
     }
 
+    func testDeclarativePluginCreatesAnEncodedHTTPSAction() throws {
+        let manifest = try DeclarativePluginCodec.decodeAndValidate(Data(#"""
+        {
+          "schemaVersion": 1,
+          "identifier": "com.copythat.example.maps",
+          "name": { "en": "Maps Search", "zh-Hans": "地图搜索" },
+          "description": { "en": "Find copied text in Maps.", "zh-Hans": "在地图中查找复制文字。" },
+          "systemImage": "map",
+          "matches": ["text"],
+          "action": {
+            "type": "openURL",
+            "title": { "en": "Find Place", "zh-Hans": "查找位置" },
+            "urlTemplate": "https://maps.apple.com/?q={content}"
+          }
+        }
+        """#.utf8))
+
+        let action = ClipboardContent.text("coffee shop").primaryAction(
+            locale: .simplifiedChinese,
+            declarativePlugins: [manifest]
+        )
+        XCTAssertEqual(action?.title, "查找位置")
+        XCTAssertEqual(
+            action?.target,
+            .external(.openDefault(URL(string: "https://maps.apple.com/?q=coffee%20shop")!))
+        )
+    }
+
+    func testDeclarativePluginRejectsUnsafeURLSchemes() {
+        let data = Data(#"""
+        {
+          "schemaVersion": 1,
+          "identifier": "com.copythat.example.unsafe",
+          "name": { "en": "Unsafe" },
+          "description": { "en": "Unsafe action." },
+          "systemImage": "bolt",
+          "matches": ["text"],
+          "action": {
+            "type": "openURL",
+            "title": { "en": "Run" },
+            "urlTemplate": "http://example.com/?q={content}"
+          }
+        }
+        """#.utf8)
+
+        XCTAssertThrowsError(try DeclarativePluginCodec.decodeAndValidate(data)) {
+            XCTAssertEqual(
+                $0 as? DeclarativePluginValidationError,
+                .unsafeURLTemplate
+            )
+        }
+    }
+
     @MainActor
     func testPluginsCanBeRemovedAndInstalledWithoutLosingTheCatalog() {
         let suiteName = "CopyThat.PluginArchitectureTests.\(UUID().uuidString)"
@@ -133,6 +186,59 @@ final class PluginArchitectureTests: XCTestCase {
         XCTAssertEqual(reloaded.appLanguage, .simplifiedChinese)
         XCTAssertTrue(reloaded.isDetectionInstalled(.calculation))
         XCTAssertTrue(reloaded.isActionPluginInstalled(.copyCalculation))
+    }
+
+    @MainActor
+    func testDeclarativePluginCanBeInstalledReloadedDisabledAndRemoved() throws {
+        let suiteName = "CopyThat.DeclarativePluginTests.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            return XCTFail("Could not create isolated defaults")
+        }
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CopyThatTests-\(UUID().uuidString)", isDirectory: true)
+        let pluginDirectory = root.appendingPathComponent("Installed", isDirectory: true)
+        let sourceURL = root.appendingPathComponent("Maps.copythatplugin")
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+            try? FileManager.default.removeItem(at: root)
+        }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data(#"""
+        {
+          "schemaVersion": 1,
+          "identifier": "com.copythat.tests.maps",
+          "name": { "en": "Maps" },
+          "description": { "en": "Find copied text." },
+          "systemImage": "map",
+          "matches": ["text"],
+          "action": {
+            "type": "openURL",
+            "title": { "en": "Open Maps" },
+            "urlTemplate": "https://maps.apple.com/?q={content}"
+          }
+        }
+        """#.utf8).write(to: sourceURL)
+
+        let settings = SettingsManager(
+            defaults: defaults,
+            declarativePluginDirectory: pluginDirectory
+        )
+        let installed = try settings.installDeclarativePlugin(from: sourceURL)
+        XCTAssertEqual(settings.enabledDeclarativePlugins.map(\.identifier), [installed.identifier])
+
+        settings.setDeclarativePlugin(installed, enabled: false)
+        XCTAssertTrue(settings.enabledDeclarativePlugins.isEmpty)
+
+        let reloaded = SettingsManager(
+            defaults: defaults,
+            declarativePluginDirectory: pluginDirectory
+        )
+        XCTAssertEqual(reloaded.installedDeclarativePlugins.map(\.identifier), [installed.identifier])
+        XCTAssertTrue(reloaded.enabledDeclarativePlugins.isEmpty)
+
+        try reloaded.uninstallDeclarativePlugin(installed)
+        XCTAssertTrue(reloaded.installedDeclarativePlugins.isEmpty)
     }
 }
 

@@ -66,6 +66,7 @@ final class OverlayManager {
             primaryAction: content.primaryAction(
                 using: settings.activeSearchProvider,
                 locale: settings.resolvedLocale,
+                declarativePlugins: settings.enabledDeclarativePlugins,
                 enabledPluginIDs: settings.enabledActionPluginIDs
             ),
             locale: settings.resolvedLocale

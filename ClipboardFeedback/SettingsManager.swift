@@ -11,6 +11,8 @@ final class SettingsManager: ObservableObject {
         static let disabledActionPlugins = "disabledActionPlugins"
         static let uninstalledDetectionKinds = "uninstalledDetectionKinds"
         static let uninstalledActionPlugins = "uninstalledActionPlugins"
+        static let disabledDeclarativePlugins = "disabledDeclarativePlugins"
+        static let declarativePluginOrder = "declarativePluginOrder"
         static let appLanguage = "appLanguage"
         static let searchEngine = "searchEngine"
         static let customSearchEngineName = "customSearchEngineName"
@@ -19,6 +21,7 @@ final class SettingsManager: ObservableObject {
     }
 
     private let defaults: UserDefaults
+    private let declarativePluginDirectory: URL
 
     @Published var isEnabled: Bool {
         didSet {
@@ -32,6 +35,8 @@ final class SettingsManager: ObservableObject {
     @Published private(set) var disabledActionPluginIDs: Set<String>
     @Published private(set) var uninstalledDetectionKindIDs: Set<String>
     @Published private(set) var uninstalledActionPluginIDs: Set<String>
+    @Published private(set) var disabledDeclarativePluginIDs: Set<String>
+    @Published private(set) var installedDeclarativePlugins: [DeclarativePluginManifest]
 
     @Published var appLanguage: AppLanguage {
         didSet {
@@ -59,8 +64,13 @@ final class SettingsManager: ObservableObject {
 
     @Published private(set) var glassEffectStrength: Double
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        declarativePluginDirectory: URL? = nil
+    ) {
         self.defaults = defaults
+        self.declarativePluginDirectory = declarativePluginDirectory
+            ?? Self.defaultDeclarativePluginDirectory
         if defaults.object(forKey: Key.feedbackEnabled) == nil {
             self.isEnabled = true
         } else {
@@ -79,6 +89,10 @@ final class SettingsManager: ObservableObject {
         self.uninstalledActionPluginIDs = Set(
             defaults.stringArray(forKey: Key.uninstalledActionPlugins) ?? []
         )
+        self.disabledDeclarativePluginIDs = Set(
+            defaults.stringArray(forKey: Key.disabledDeclarativePlugins) ?? []
+        )
+        self.installedDeclarativePlugins = []
         self.appLanguage = AppLanguage(
             rawValue: defaults.string(forKey: Key.appLanguage) ?? ""
         ) ?? .system
@@ -98,6 +112,10 @@ final class SettingsManager: ObservableObject {
                 strength: defaults.double(forKey: Key.glassEffectStrength)
             ).strength
         }
+        self.installedDeclarativePlugins = Self.loadDeclarativePlugins(
+            from: self.declarativePluginDirectory,
+            preferredOrder: defaults.stringArray(forKey: Key.declarativePluginOrder) ?? []
+        )
     }
 
     func setGlassEffectStrength(_ value: Double) {
@@ -144,6 +162,12 @@ final class SettingsManager: ObservableObject {
         Set(ClipboardActionPluginID.allCases.filter {
             isActionPluginInstalled($0) && !disabledActionPluginIDs.contains($0.rawValue)
         })
+    }
+
+    var enabledDeclarativePlugins: [DeclarativePluginManifest] {
+        installedDeclarativePlugins.filter {
+            !disabledDeclarativePluginIDs.contains($0.identifier)
+        }
     }
 
     var resolvedLocale: InterfaceLocale {
@@ -216,6 +240,79 @@ final class SettingsManager: ObservableObject {
         persistPluginState()
     }
 
+    func isDeclarativePluginEnabled(_ plugin: DeclarativePluginManifest) -> Bool {
+        !disabledDeclarativePluginIDs.contains(plugin.identifier)
+    }
+
+    func setDeclarativePlugin(
+        _ plugin: DeclarativePluginManifest,
+        enabled: Bool
+    ) {
+        guard installedDeclarativePlugins.contains(where: {
+            $0.identifier == plugin.identifier
+        }) else { return }
+
+        if enabled {
+            disabledDeclarativePluginIDs.remove(plugin.identifier)
+        } else {
+            disabledDeclarativePluginIDs.insert(plugin.identifier)
+        }
+        persistDeclarativePluginState()
+    }
+
+    @discardableResult
+    func installDeclarativePlugin(from sourceURL: URL) throws -> DeclarativePluginManifest {
+        let didAccess = sourceURL.startAccessingSecurityScopedResource()
+        defer {
+            if didAccess {
+                sourceURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        let resourceValues = try sourceURL.resourceValues(forKeys: [.fileSizeKey])
+        if let fileSize = resourceValues.fileSize,
+           fileSize > DeclarativePluginManifest.maximumFileSize {
+            throw DeclarativePluginValidationError.fileTooLarge
+        }
+
+        let data = try Data(contentsOf: sourceURL, options: .mappedIfSafe)
+        let manifest = try DeclarativePluginCodec.decodeAndValidate(data)
+        let canonicalData = try DeclarativePluginCodec.encoded(manifest)
+
+        try FileManager.default.createDirectory(
+            at: declarativePluginDirectory,
+            withIntermediateDirectories: true
+        )
+        try canonicalData.write(
+            to: declarativePluginURL(for: manifest.identifier),
+            options: .atomic
+        )
+
+        installedDeclarativePlugins.removeAll {
+            $0.identifier == manifest.identifier
+        }
+        installedDeclarativePlugins.insert(manifest, at: 0)
+        disabledDeclarativePluginIDs.remove(manifest.identifier)
+        persistDeclarativePluginState()
+        return manifest
+    }
+
+    func uninstallDeclarativePlugin(_ plugin: DeclarativePluginManifest) throws {
+        guard installedDeclarativePlugins.contains(where: {
+            $0.identifier == plugin.identifier
+        }) else { return }
+
+        let destination = declarativePluginURL(for: plugin.identifier)
+        if FileManager.default.fileExists(atPath: destination.path) {
+            try FileManager.default.removeItem(at: destination)
+        }
+        installedDeclarativePlugins.removeAll {
+            $0.identifier == plugin.identifier
+        }
+        disabledDeclarativePluginIDs.remove(plugin.identifier)
+        persistDeclarativePluginState()
+    }
+
     private func persistPluginState() {
         defaults.set(
             Array(disabledDetectionKindIDs).sorted(),
@@ -233,6 +330,69 @@ final class SettingsManager: ObservableObject {
             Array(uninstalledActionPluginIDs).sorted(),
             forKey: Key.uninstalledActionPlugins
         )
+    }
+
+    private func persistDeclarativePluginState() {
+        defaults.set(
+            Array(disabledDeclarativePluginIDs).sorted(),
+            forKey: Key.disabledDeclarativePlugins
+        )
+        defaults.set(
+            installedDeclarativePlugins.map(\.identifier),
+            forKey: Key.declarativePluginOrder
+        )
+    }
+
+    private func declarativePluginURL(for identifier: String) -> URL {
+        declarativePluginDirectory
+            .appendingPathComponent(identifier)
+            .appendingPathExtension("copythatplugin")
+    }
+
+    private static var defaultDeclarativePluginDirectory: URL {
+        let root = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? FileManager.default.temporaryDirectory
+        return root
+            .appendingPathComponent("CopyThat", isDirectory: true)
+            .appendingPathComponent("Plugins", isDirectory: true)
+    }
+
+    private static func loadDeclarativePlugins(
+        from directory: URL,
+        preferredOrder: [String]
+    ) -> [DeclarativePluginManifest] {
+        guard let fileURLs = try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+
+        var pluginsByID: [String: DeclarativePluginManifest] = [:]
+        for fileURL in fileURLs where fileURL.pathExtension == "copythatplugin" {
+            guard let values = try? fileURL.resourceValues(forKeys: [.fileSizeKey]),
+                  (values.fileSize ?? 0) <= DeclarativePluginManifest.maximumFileSize,
+                  let data = try? Data(contentsOf: fileURL, options: .mappedIfSafe),
+                  let manifest = try? DeclarativePluginCodec.decodeAndValidate(data),
+                  fileURL.deletingPathExtension().lastPathComponent == manifest.identifier else {
+                continue
+            }
+            pluginsByID[manifest.identifier] = manifest
+        }
+
+        var ordered: [DeclarativePluginManifest] = []
+        for identifier in preferredOrder {
+            if let plugin = pluginsByID.removeValue(forKey: identifier) {
+                ordered.append(plugin)
+            }
+        }
+        ordered.append(contentsOf: pluginsByID.values.sorted {
+            $0.identifier.localizedStandardCompare($1.identifier) == .orderedAscending
+        })
+        return ordered
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {

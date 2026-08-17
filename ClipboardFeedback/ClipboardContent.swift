@@ -201,11 +201,18 @@ enum ClipboardContent: Equatable {
     func primaryAction(
         using searchProvider: WebSearchProvider? = .duckDuckGo,
         locale: InterfaceLocale = .english,
+        declarativePlugins: [DeclarativePluginManifest] = [],
         enabledPluginIDs: Set<ClipboardActionPluginID> = Set(
             ClipboardActionPluginID.allCases
         )
     ) -> ClipboardActionDescriptor? {
-        ClipboardActionRegistry.builtIn.primaryAction(
+        for plugin in declarativePlugins {
+            if let action = plugin.action(for: self, locale: locale) {
+                return action
+            }
+        }
+
+        return ClipboardActionRegistry.builtIn.primaryAction(
             for: self,
             context: ClipboardPluginContext(
                 searchProvider: searchProvider,
