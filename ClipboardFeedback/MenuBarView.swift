@@ -27,6 +27,6 @@ struct MenuBarView: View {
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "1.5.0"
+            ?? "2.0.0"
     }
 }

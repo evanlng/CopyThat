@@ -11,6 +11,14 @@ struct ClipboardActionDescriptor: Equatable, Identifiable {
 enum ClipboardActionTarget: Equatable {
     case external(ExternalAppTarget)
     case formatCode(language: CodeLanguage, source: String)
+    case copyText(String)
+    case showReference(ClipboardReference)
+}
+
+struct ClipboardReference: Equatable {
+    let title: String
+    let subtitle: String
+    let body: String
 }
 
 /// A single audited interface for handing copied content to another app.

@@ -8,6 +8,7 @@ final class SettingsManager: ObservableObject {
     private enum Key {
         static let feedbackEnabled = "feedbackEnabled"
         static let disabledDetectionKinds = "disabledDetectionKinds"
+        static let disabledActionPlugins = "disabledActionPlugins"
         static let searchEngine = "searchEngine"
         static let customSearchEngineName = "customSearchEngineName"
         static let customSearchURLTemplate = "customSearchURLTemplate"
@@ -25,6 +26,7 @@ final class SettingsManager: ObservableObject {
     @Published private(set) var launchAtLoginEnabled: Bool
     @Published private(set) var launchAtLoginMessage: String?
     @Published private(set) var disabledDetectionKindIDs: Set<String>
+    @Published private(set) var disabledActionPluginIDs: Set<String>
 
     @Published var searchEngine: SearchEngineOption {
         didSet {
@@ -56,6 +58,9 @@ final class SettingsManager: ObservableObject {
         self.launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
         self.disabledDetectionKindIDs = Set(
             defaults.stringArray(forKey: Key.disabledDetectionKinds) ?? []
+        )
+        self.disabledActionPluginIDs = Set(
+            defaults.stringArray(forKey: Key.disabledActionPlugins) ?? []
         )
         self.searchEngine = SearchEngineOption(
             rawValue: defaults.string(forKey: Key.searchEngine) ?? ""
@@ -115,6 +120,12 @@ final class SettingsManager: ObservableObject {
         })
     }
 
+    var enabledActionPluginIDs: Set<ClipboardActionPluginID> {
+        Set(ClipboardActionPluginID.allCases.filter {
+            !disabledActionPluginIDs.contains($0.rawValue)
+        })
+    }
+
     func isDetectionEnabled(_ kind: ClipboardContentKind) -> Bool {
         !disabledDetectionKindIDs.contains(kind.rawValue)
     }
@@ -128,6 +139,22 @@ final class SettingsManager: ObservableObject {
         defaults.set(
             Array(disabledDetectionKindIDs).sorted(),
             forKey: Key.disabledDetectionKinds
+        )
+    }
+
+    func isActionPluginEnabled(_ plugin: ClipboardActionPluginID) -> Bool {
+        !disabledActionPluginIDs.contains(plugin.rawValue)
+    }
+
+    func setActionPlugin(_ plugin: ClipboardActionPluginID, enabled: Bool) {
+        if enabled {
+            disabledActionPluginIDs.remove(plugin.rawValue)
+        } else {
+            disabledActionPluginIDs.insert(plugin.rawValue)
+        }
+        defaults.set(
+            Array(disabledActionPluginIDs).sorted(),
+            forKey: Key.disabledActionPlugins
         )
     }
 

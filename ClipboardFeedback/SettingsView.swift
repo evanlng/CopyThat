@@ -13,7 +13,7 @@ struct ClipboardFeedbackSettingsView: View {
 
             DetectionSettingsView(settings: settings)
                 .tabItem {
-                    Label("Detection", systemImage: "rectangle.3.group")
+                    Label("Plugins", systemImage: "puzzlepiece.extension")
                 }
 
             AboutSettingsView()
@@ -376,7 +376,7 @@ private struct DetectionSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Content Types")
+                Text("Content Plugins")
                     .font(.title3.weight(.semibold))
 
                 VStack(spacing: 0) {
@@ -420,12 +420,62 @@ private struct DetectionSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Text("All detectors run locally. Disabled types fall back to ordinary copy feedback.")
+                Text("Action Plugins")
+                    .font(.title3.weight(.semibold))
+                    .padding(.top, 8)
+
+                VStack(spacing: 0) {
+                    ForEach(ClipboardActionPluginID.allCases) { plugin in
+                        ActionPluginToggleRow(
+                            plugin: plugin,
+                            isEnabled: Binding(
+                                get: { settings.isActionPluginEnabled(plugin) },
+                                set: { settings.setActionPlugin(plugin, enabled: $0) }
+                            )
+                        )
+
+                        if plugin != ClipboardActionPluginID.allCases.last {
+                            Divider()
+                                .padding(.leading, 46)
+                        }
+                    }
+                }
+                .background(
+                    Color(nsColor: .controlBackgroundColor).opacity(0.72),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
+
+                Text("Plugins run only after the clipboard changes. Everything stays local, and disabled content falls back to ordinary copy feedback.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .padding(24)
         }
+    }
+}
+
+private struct ActionPluginToggleRow: View {
+    let plugin: ClipboardActionPluginID
+    @Binding var isEnabled: Bool
+
+    var body: some View {
+        HStack(spacing: 13) {
+            Image(systemName: plugin.symbolName)
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+                .frame(width: 24)
+
+            Text(plugin.title)
+                .font(.system(size: 14, weight: .medium))
+
+            Spacer()
+
+            Toggle("", isOn: $isEnabled)
+                .labelsHidden()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
+        .contentShape(.rect)
     }
 }
 
@@ -482,6 +532,6 @@ private struct AboutSettingsView: View {
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "1.5.0"
+            ?? "2.0.0"
     }
 }

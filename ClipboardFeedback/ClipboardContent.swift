@@ -1,6 +1,9 @@
 import AppKit
 
 enum ClipboardContentKind: String, CaseIterable, Identifiable {
+    case calculation
+    case englishWord
+    case chineseCharacter
     case link
     case phoneNumber
     case emailAddress
@@ -12,6 +15,9 @@ enum ClipboardContentKind: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .calculation: return "Calculator"
+        case .englishWord: return "English Dictionary"
+        case .chineseCharacter: return "Chinese Character"
         case .link: return "Link"
         case .phoneNumber: return "Phone Number"
         case .emailAddress: return "Email Address"
@@ -25,6 +31,9 @@ enum ClipboardContentKind: String, CaseIterable, Identifiable {
 
     var symbolName: String {
         switch self {
+        case .calculation: return "function"
+        case .englishWord: return "character.book.closed"
+        case .chineseCharacter: return "character.textbox"
         case .link: return "link"
         case .phoneNumber: return "phone"
         case .emailAddress: return "envelope"
@@ -37,6 +46,9 @@ enum ClipboardContentKind: String, CaseIterable, Identifiable {
 
 enum ClipboardContent: Equatable {
     case text(String)
+    case calculation(expression: String, result: String)
+    case englishWord(word: String, definition: String)
+    case chineseCharacter(character: String, pinyin: String, definition: String?)
     case link(URL)
     case phoneNumber(display: String, normalized: String)
     case emailAddress(String)
@@ -49,6 +61,12 @@ enum ClipboardContent: Equatable {
         switch self {
         case .text:
             return "Copied"
+        case .calculation:
+            return "Calculated"
+        case .englishWord:
+            return "Word found"
+        case .chineseCharacter:
+            return "Chinese character copied"
         case .link:
             return "Link copied"
         case .phoneNumber:
@@ -70,6 +88,12 @@ enum ClipboardContent: Equatable {
         switch self {
         case .text(let text):
             return TextPreview.make(text)
+        case .calculation(let expression, let result):
+            return "\(TextPreview.make(expression, limit: 64)) = \(result)"
+        case .englishWord(let word, let definition):
+            return "\(word) · \(TextPreview.make(definition, limit: 180))"
+        case .chineseCharacter(let character, _, _):
+            return character
         case .link(let url):
             return URLDetector.displayString(for: url)
         case .phoneNumber(let display, _):
@@ -91,6 +115,12 @@ enum ClipboardContent: Equatable {
 
     var symbolName: String {
         switch self {
+        case .calculation:
+            return "function"
+        case .englishWord:
+            return "character.book.closed.fill"
+        case .chineseCharacter:
+            return "character.textbox"
         case .link:
             return "link"
         case .phoneNumber:
@@ -119,72 +149,16 @@ enum ClipboardContent: Equatable {
     }
 
     func primaryAction(
-        using searchProvider: WebSearchProvider? = .duckDuckGo
+        using searchProvider: WebSearchProvider? = .duckDuckGo,
+        enabledPluginIDs: Set<ClipboardActionPluginID> = Set(
+            ClipboardActionPluginID.allCases
+        )
     ) -> ClipboardActionDescriptor? {
-        switch self {
-        case .text(let text):
-            guard let searchURL = searchProvider?.searchURL(for: text) else {
-                return nil
-            }
-            return ClipboardActionDescriptor(
-                title: "Search",
-                systemImage: "magnifyingglass",
-                target: .external(
-                    .openInApplication(
-                        urls: [searchURL],
-                        bundleIdentifier: "com.apple.Safari"
-                    )
-                )
-            )
-
-        case .link(let url):
-            return ClipboardActionDescriptor(
-                title: "Open Safari",
-                systemImage: "safari",
-                target: .external(
-                    .openInApplication(
-                        urls: [url],
-                        bundleIdentifier: "com.apple.Safari"
-                    )
-                )
-            )
-
-        case .phoneNumber(_, let normalized):
-            guard let url = URL(string: "tel:\(normalized)") else { return nil }
-            return ClipboardActionDescriptor(
-                title: "Call",
-                systemImage: "phone.fill",
-                target: .external(.openDefault(url))
-            )
-
-        case .emailAddress(let email):
-            guard let encoded = email.addingPercentEncoding(
-                withAllowedCharacters: .urlPathAllowed
-            ), let url = URL(string: "mailto:\(encoded)") else { return nil }
-            return ClipboardActionDescriptor(
-                title: "Compose",
-                systemImage: "envelope.fill",
-                target: .external(.openDefault(url))
-            )
-
-        case .code(let language, _, .some(let source))
-            where language.supportsBasicFormatting:
-            return ClipboardActionDescriptor(
-                title: "Format",
-                systemImage: "text.alignleft",
-                target: .formatCode(language: language, source: source)
-            )
-
-        case .files(let urls, _) where !urls.isEmpty:
-            return ClipboardActionDescriptor(
-                title: "Show in Finder",
-                systemImage: "folder",
-                target: .external(.revealInFinder(urls))
-            )
-
-        case .code, .files, .image, .other:
-            return nil
-        }
+        ClipboardActionRegistry.builtIn.primaryAction(
+            for: self,
+            context: ClipboardPluginContext(searchProvider: searchProvider),
+            enabledPluginIDs: enabledPluginIDs
+        )
     }
 }
 

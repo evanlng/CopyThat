@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "CopyThat",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v14)
     ],
@@ -14,7 +15,11 @@ let package = Package(
         .executableTarget(
             name: "ClipboardFeedback",
             path: "ClipboardFeedback",
-            exclude: ["Info.plist"]
+            exclude: [
+                "Info.plist",
+                "AppIcon.icon",
+                "ClipboardFeedback.entitlements"
+            ]
         ),
         .testTarget(
             name: "ClipboardFeedbackTests",

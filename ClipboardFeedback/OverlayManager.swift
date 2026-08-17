@@ -40,6 +40,7 @@ final class OverlayManager {
     private let displayDuration: TimeInterval = 1.8
     private let screenMargin: CGFloat = 16
     private let formatterWindowManager = CodeFormatterWindowManager()
+    private let referenceWindowManager = PluginReferenceWindowManager()
 
     private var panel: OverlayPanel?
     private var hostingView: FirstMouseHostingView<OverlayView>?
@@ -60,7 +61,10 @@ final class OverlayManager {
             content: content,
             glassEffectStrength: metrics.strength,
             usesNativeGlassBackground: usesNativeGlass,
-            primaryAction: content.primaryAction(using: settings.activeSearchProvider)
+            primaryAction: content.primaryAction(
+                using: settings.activeSearchProvider,
+                enabledPluginIDs: settings.enabledActionPluginIDs
+            )
         ) { action in
             self.perform(action)
         } onHoverChanged: { [weak self] hovering in
@@ -117,6 +121,12 @@ final class OverlayManager {
         switch action.target {
         case .formatCode(let language, let source):
             formatterWindowManager.show(language: language, source: source)
+        case .copyText(let text):
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+        case .showReference(let reference):
+            referenceWindowManager.show(reference)
         case .external:
             ClipboardActionExecutor.perform(action)
         }

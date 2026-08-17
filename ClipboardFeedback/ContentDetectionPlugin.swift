@@ -1,7 +1,7 @@
 import Foundation
 
 /// Safe, compile-time plugin point for adding content recognition. Detectors
-/// describe what copied text represents; action execution remains centralized.
+/// run only after changeCount changes and must remain bounded and local.
 protocol ClipboardContentDetector {
     var kind: ClipboardContentKind { get }
     func detect(in text: String) -> ClipboardContent?
@@ -11,8 +11,11 @@ struct ClipboardDetectionRegistry {
     static let builtIn = ClipboardDetectionRegistry(detectors: [
         LinkContentDetector(),
         EmailAddressContentDetector(),
+        PhoneNumberContentDetector(),
+        CalculationContentDetector(),
         CodeContentDetector(),
-        PhoneNumberContentDetector()
+        ChineseCharacterContentDetector(),
+        EnglishWordContentDetector()
     ])
 
     private let detectors: [any ClipboardContentDetector]

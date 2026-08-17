@@ -1,4 +1,4 @@
-# CopyThat（牛马）1.5.0
+# CopyThat（牛马）2.0.0
 
 ![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
@@ -29,13 +29,24 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **复制反馈**：剪贴板更新后立即显示不抢焦点的 Liquid Glass 浮窗。
 - **链接**：识别 `http://`、`https://` 和 `www.` 开头的地址，点击即可使用 Safari 打开。
 - **文字**：点击 **Search**，使用 DuckDuckGo、Bing、百度、Google 或自定义搜索引擎搜索。
+- **数学表达式**：本地计算 `12 * (3 + 4)`、乘除、余数和乘方，点击 **Copy Result** 复制结果。
+- **英文单词**：按需调用 macOS 已安装的本地词典，直接在浮窗显示简短词义。
+- **单个汉字**：本地生成拼音，点击 **Details** 查看拼音与系统词典释义。
 - **电话号码**：点击 **Call**，交给 macOS 的 `tel:` 处理程序拨打。
 - **邮箱地址**：点击 **Compose**，打开默认邮件 App 并自动填入收件人。
 - **Finder 文件**：点击 **Show in Finder**，直接显示文件所在位置。
 - **图片**：显示临时低分辨率缩略图，浮窗关闭后立即释放。
 - **代码**：本地识别 Python、JavaScript、Swift、HTML、CSS、JSON、SQL 和 Bash。
 - **格式化**：JSON 和 Python 可在用户主动点击 **Format** 后预览并复制格式化结果。
-- **自定义检测**：可在设置中分别启用或关闭不同内容类型。
+- **插件开关**：内容识别和操作按钮都是独立插件，可在设置中分别启用或关闭。
+
+### 2.0 插件架构
+
+2.0 将内容识别和按钮动作从 HUD 中完全拆开。`ClipboardContentDetector`
+只负责识别一次复制内容；`ClipboardActionPlugin` 只负责为已识别内容提供一个用户主动点击的动作。
+主程序只遍历注册表，因此以后增加新的识别或操作时，不需要重写浮窗和主流程。
+
+这些是编译进 App 的轻量本地插件，不是独立进程，也不会在空闲时执行。
 
 ### 它不是什么？
 
@@ -81,10 +92,11 @@ Developer ID 签名和 Apple 公证。
   复制后短时间切换为 80 ms，并在 2.4 秒后恢复。
 - Timer tolerance 允许 macOS 合并唤醒；暂停反馈时计时器会完全停止。
 - 只有剪贴板变化后才进行一次有界分析，不持续处理内容。
+- 插件只在这次分析中按固定顺序快速判断；词典只对一个短单词或单个汉字按需查询。
 - 文本只短暂保留最多 1,000 个字符；文件最多读取 20 个 URL。
 - 图片仅生成最大 240 px 的临时缩略图，不写入磁盘或缓存。
 - 快速连续复制会复用同一个浮窗和 SwiftUI hosting view。
-- 最终 Apple Silicon Release 的空闲采样均为 0.0% CPU，内存约 25 MB。
+- 2.0 Apple Silicon Release 连续三次空闲采样均为 0.0% CPU，常驻内存约 18 MB。
 
 ### 已知限制
 
@@ -115,13 +127,26 @@ assistant that recognizes the copied content and offers the most useful next act
 - **Copy feedback**: shows a non-activating Liquid Glass HUD after a clipboard update.
 - **Links**: recognizes `http://`, `https://`, and `www.` addresses and opens them in Safari.
 - **Text**: searches with DuckDuckGo, Bing, Baidu, Google, or a custom search engine.
+- **Math expressions**: locally evaluates bounded expressions such as `12 * (3 + 4)` and offers **Copy Result**.
+- **English words**: queries dictionaries already installed by macOS and shows a short local definition.
+- **Single Chinese characters**: generates pinyin locally and opens pinyin and dictionary details on demand.
 - **Phone numbers**: hands the number to the macOS `tel:` handler through **Call**.
 - **Email addresses**: opens the default mail app with the recipient filled in through **Compose**.
 - **Finder files**: reveals copied files through **Show in Finder**.
 - **Images**: displays a temporary low-resolution thumbnail and releases it with the HUD.
 - **Code**: locally detects Python, JavaScript, Swift, HTML, CSS, JSON, SQL, and Bash.
 - **Formatting**: JSON and Python can be reviewed and copied after the user clicks **Format**.
-- **Configurable detection**: each smart content type can be enabled or disabled separately.
+- **Plugin controls**: content detectors and action buttons can be enabled independently.
+
+### 2.0 plugin architecture
+
+CopyThat 2.0 separates recognition from actions. A `ClipboardContentDetector`
+recognizes one clipboard update, while a `ClipboardActionPlugin` contributes an
+explicit user action. The HUD only consumes plugin results, so new capabilities
+can be added without rewriting the overlay or central action flow.
+
+These are lightweight plugins compiled into the app. They are not background
+processes and do no work while the clipboard is idle.
 
 ### What is it not?
 
@@ -169,10 +194,11 @@ The built product is `CopyThat.app`; its Simplified Chinese display name is “�
   briefly every 80 ms after a copy, then back to normal after 2.4 seconds.
 - Timer tolerance lets macOS coalesce wakeups, and pausing feedback stops the timer.
 - Content analysis runs once, and only after the clipboard changes.
+- Plugins perform bounded checks in a fixed order; dictionary lookup runs only for one short word or character.
 - At most 1,000 text characters and 20 file URLs are retained for the short-lived HUD.
 - Images become temporary thumbnails no larger than 240 px and are never written to disk.
 - Rapid copies reuse the same panel and SwiftUI hosting view.
-- Final Apple Silicon Release samples reported 0.0% idle CPU and about 25 MB of memory.
+- Three idle samples of the 2.0 Apple Silicon Release reported 0.0% CPU and about 18 MB of memory.
 
 ### Known limitation
 
@@ -188,6 +214,10 @@ Input Monitoring or Accessibility permission.
 - `ClipboardMonitor` — pasteboard change detection / 剪贴板变化检测
 - `ClipboardAnalyzer` — bounded content analysis / 有界内容分析
 - `ContentDetectionPlugin` — local detector interface / 本地检测接口
+- `ClipboardActionPlugin` — extensible action interface and registry / 可扩展操作接口与注册表
+- `MathExpressionPlugin` — bounded local calculator / 有界本地计算器
+- `DictionaryPlugins` — on-demand macOS dictionary and pinyin / 按需系统词典与拼音
+- [`PLUGIN_DEVELOPMENT.md`](PLUGIN_DEVELOPMENT.md) — extension contract and performance rules / 扩展接口与性能规则
 - `OverlayManager` and `OverlayView` — floating HUD / 浮窗管理与界面
 - `SettingsManager` and `SettingsView` — preferences / 设置管理
 - `CodeDetector` and `CodeFormatter` — local code tools / 本地代码工具

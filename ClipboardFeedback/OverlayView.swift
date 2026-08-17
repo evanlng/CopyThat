@@ -147,6 +147,9 @@ struct OverlayView: View {
 
     private var statusColor: Color {
         switch content {
+        case .calculation: return .orange
+        case .englishWord: return .teal
+        case .chineseCharacter: return .pink
         case .link: return .blue
         case .phoneNumber: return .green
         case .emailAddress: return .orange

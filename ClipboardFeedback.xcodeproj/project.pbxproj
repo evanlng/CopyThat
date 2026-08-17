@@ -28,12 +28,17 @@
 		A10000000000000000000013 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000017 /* AppIcon.icon */; };
 		A10000000000000000000014 /* GlassAppearanceMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* GlassAppearanceMetrics.swift */; };
 		A10000000000000000000015 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001B /* InfoPlist.strings */; };
+		A10000000000000000000016 /* ClipboardActionPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001C /* ClipboardActionPlugin.swift */; };
+		A10000000000000000000017 /* DictionaryPlugins.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001D /* DictionaryPlugins.swift */; };
+		A10000000000000000000018 /* MathExpressionPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001E /* MathExpressionPlugin.swift */; };
+		A10000000000000000000019 /* PluginReferenceWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001F /* PluginReferenceWindow.swift */; };
 		A20000000000000000000001 /* URLDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* URLDetectorTests.swift */; };
 		A20000000000000000000002 /* TextPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* TextPreviewTests.swift */; };
 		A20000000000000000000003 /* ClipboardContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* ClipboardContentTests.swift */; };
 		A20000000000000000000004 /* CodeDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* CodeDetectorTests.swift */; };
 		A20000000000000000000005 /* CodeFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* CodeFormatterTests.swift */; };
 		A20000000000000000000006 /* ImagePreviewGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* ImagePreviewGeneratorTests.swift */; };
+		A20000000000000000000007 /* PluginArchitectureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* PluginArchitectureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +78,10 @@
 		B10000000000000000000018 /* GlassAppearanceMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassAppearanceMetrics.swift; sourceTree = "<group>"; };
 		B10000000000000000000019 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		B1000000000000000000001A /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		B1000000000000000000001C /* ClipboardActionPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardActionPlugin.swift; sourceTree = "<group>"; };
+		B1000000000000000000001D /* DictionaryPlugins.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryPlugins.swift; sourceTree = "<group>"; };
+		B1000000000000000000001E /* MathExpressionPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathExpressionPlugin.swift; sourceTree = "<group>"; };
+		B1000000000000000000001F /* PluginReferenceWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginReferenceWindow.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* URLDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLDetectorTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* TextPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPreviewTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000003 /* ClipboardFeedbackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClipboardFeedbackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -80,6 +89,7 @@
 		B20000000000000000000005 /* CodeDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeDetectorTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000006 /* CodeFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeFormatterTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000007 /* ImagePreviewGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePreviewGeneratorTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000008 /* PluginArchitectureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginArchitectureTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,9 +129,13 @@
 				B10000000000000000000011 /* ClipboardAnalyzer.swift */,
 				B10000000000000000000004 /* ClipboardContent.swift */,
 				B1000000000000000000000F /* ContentDetectionPlugin.swift */,
+				B1000000000000000000001C /* ClipboardActionPlugin.swift */,
+				B1000000000000000000001D /* DictionaryPlugins.swift */,
+				B1000000000000000000001E /* MathExpressionPlugin.swift */,
 				B10000000000000000000013 /* CodeDetector.swift */,
 				B10000000000000000000014 /* CodeFormatter.swift */,
 				B10000000000000000000015 /* CodeFormatterWindow.swift */,
+				B1000000000000000000001F /* PluginReferenceWindow.swift */,
 				B10000000000000000000012 /* ImagePreviewGenerator.swift */,
 				B1000000000000000000000E /* ClipboardAction.swift */,
 				B10000000000000000000005 /* URLDetector.swift */,
@@ -158,6 +172,7 @@
 				B20000000000000000000007 /* ImagePreviewGeneratorTests.swift */,
 				B20000000000000000000001 /* URLDetectorTests.swift */,
 				B20000000000000000000002 /* TextPreviewTests.swift */,
+				B20000000000000000000008 /* PluginArchitectureTests.swift */,
 			);
 			path = ClipboardFeedbackTests;
 			sourceTree = "<group>";
@@ -287,6 +302,10 @@
 				A10000000000000000000010 /* CodeFormatter.swift in Sources */,
 				A10000000000000000000011 /* CodeFormatterWindow.swift in Sources */,
 				A10000000000000000000014 /* GlassAppearanceMetrics.swift in Sources */,
+				A10000000000000000000016 /* ClipboardActionPlugin.swift in Sources */,
+				A10000000000000000000017 /* DictionaryPlugins.swift in Sources */,
+				A10000000000000000000018 /* MathExpressionPlugin.swift in Sources */,
+				A10000000000000000000019 /* PluginReferenceWindow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -300,6 +319,7 @@
 				A20000000000000000000004 /* CodeDetectorTests.swift in Sources */,
 				A20000000000000000000005 /* CodeFormatterTests.swift in Sources */,
 				A20000000000000000000006 /* ImagePreviewGeneratorTests.swift in Sources */,
+				A20000000000000000000007 /* PluginArchitectureTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -381,7 +401,7 @@
 				CODE_SIGN_ENTITLEMENTS = ClipboardFeedback/ClipboardFeedback.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -390,7 +410,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.copythat.app;
 				PRODUCT_MODULE_NAME = ClipboardFeedback;
 				PRODUCT_NAME = CopyThat;
@@ -407,7 +427,7 @@
 				CODE_SIGN_ENTITLEMENTS = ClipboardFeedback/ClipboardFeedback.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -416,7 +436,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.copythat.app;
 				PRODUCT_MODULE_NAME = ClipboardFeedback;
 				PRODUCT_NAME = CopyThat;
