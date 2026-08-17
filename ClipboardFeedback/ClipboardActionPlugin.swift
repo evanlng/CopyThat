@@ -39,6 +39,27 @@ enum ClipboardActionPluginID: String, CaseIterable, Identifiable {
         case .characterDetails: return "character.textbox"
         }
     }
+
+    var subtitle: String {
+        switch self {
+        case .search:
+            return "Show Search for ordinary copied text."
+        case .openSafari:
+            return "Show Open Safari when a link is recognized."
+        case .call:
+            return "Show Call when a phone number is recognized."
+        case .composeEmail:
+            return "Show Compose when an email address is recognized."
+        case .revealInFinder:
+            return "Show copied files in Finder."
+        case .formatCode:
+            return "Show Format for supported JSON and Python code."
+        case .copyCalculation:
+            return "Show Copy Result. Calculations still display when this is off."
+        case .characterDetails:
+            return "Show a separate full definition window. Pinyin still displays when off."
+        }
+    }
 }
 
 struct ClipboardPluginContext {

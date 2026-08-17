@@ -37,7 +37,7 @@ private final class FirstMouseHostingView<Content: View>: NSHostingView<Content>
 
 @MainActor
 final class OverlayManager {
-    private let displayDuration: TimeInterval = 1.8
+    private let defaultDisplayDuration: TimeInterval = 1.8
     private let screenMargin: CGFloat = 16
     private let formatterWindowManager = CodeFormatterWindowManager()
     private let referenceWindowManager = PluginReferenceWindowManager()
@@ -46,10 +46,12 @@ final class OverlayManager {
     private var hostingView: FirstMouseHostingView<OverlayView>?
     private var dismissalWorkItem: DispatchWorkItem?
     private var displayGeneration = 0
+    private var currentDisplayDuration: TimeInterval = 1.8
 
     func show(_ content: ClipboardContent) {
         displayGeneration += 1
         let generation = displayGeneration
+        currentDisplayDuration = displayDuration(for: content)
         dismissalWorkItem?.cancel()
 
         let panel = panel ?? makePanel()
@@ -190,7 +192,21 @@ final class OverlayManager {
             self?.dismissIfCurrent(generation)
         }
         dismissalWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + displayDuration, execute: workItem)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + currentDisplayDuration,
+            execute: workItem
+        )
+    }
+
+    private func displayDuration(for content: ClipboardContent) -> TimeInterval {
+        switch content {
+        case .englishWord:
+            return 5.5
+        case .chineseCharacter:
+            return 4.0
+        default:
+            return defaultDisplayDuration
+        }
     }
 
     private func handleHoverChanged(_ hovering: Bool) {

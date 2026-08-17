@@ -379,6 +379,10 @@ private struct DetectionSettingsView: View {
                 Text("Content Plugins")
                     .font(.title3.weight(.semibold))
 
+                Text("These switches control recognition and the information shown in the HUD.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 VStack(spacing: 0) {
                     ForEach(standardKinds) { kind in
                         DetectionToggleRow(
@@ -424,6 +428,10 @@ private struct DetectionSettingsView: View {
                     .font(.title3.weight(.semibold))
                     .padding(.top, 8)
 
+                Text("These switches control buttons only. Turning one off does not disable recognition.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 VStack(spacing: 0) {
                     ForEach(ClipboardActionPluginID.allCases) { plugin in
                         ActionPluginToggleRow(
@@ -465,8 +473,14 @@ private struct ActionPluginToggleRow: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 24)
 
-            Text(plugin.title)
-                .font(.system(size: 14, weight: .medium))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(plugin.title)
+                    .font(.system(size: 14, weight: .medium))
+                Text(plugin.subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(2)
+            }
 
             Spacer()
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import Translation
 
 struct OverlayView: View {
     let content: ClipboardContent
@@ -105,14 +106,7 @@ struct OverlayView: View {
                     }
                 }
 
-                if let preview = content.preview, !preview.isEmpty {
-                    Text(preview)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .truncationMode(.tail)
-                        .textSelection(.disabled)
-                }
+                contentDetails
 
                 if let language = content.languageLabel {
                     Text(language)
@@ -145,6 +139,48 @@ struct OverlayView: View {
         .contentShape(.rect)
     }
 
+    @ViewBuilder
+    private var contentDetails: some View {
+        switch content {
+        case .englishWord(let word, let definition):
+            if #available(macOS 15.0, *) {
+                BilingualDefinitionView(word: word, definition: definition)
+            } else {
+                OverlayDetailRow(
+                    label: "English",
+                    value: definition,
+                    lineLimit: 4
+                )
+            }
+
+        case .chineseCharacter(_, let pinyin, let definition):
+            VStack(alignment: .leading, spacing: 5) {
+                OverlayDetailRow(
+                    label: "拼音 / Pinyin",
+                    value: pinyin,
+                    lineLimit: 1
+                )
+                if let definition, !definition.isEmpty {
+                    OverlayDetailRow(
+                        label: "释义 / Meaning",
+                        value: definition,
+                        lineLimit: 3
+                    )
+                }
+            }
+
+        default:
+            if let preview = content.preview, !preview.isEmpty {
+                Text(preview)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .textSelection(.disabled)
+            }
+        }
+    }
+
     private var statusColor: Color {
         switch content {
         case .calculation: return .orange
@@ -157,6 +193,118 @@ struct OverlayView: View {
         case .files: return .blue
         case .image: return .purple
         case .text, .other: return .green
+        }
+    }
+}
+
+private struct OverlayDetailRow: View {
+    let label: String
+    let value: String
+    let lineLimit: Int
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(label)
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .frame(width: 88, alignment: .leading)
+
+            Text(value)
+                .font(.system(size: 12.5))
+                .foregroundStyle(.secondary)
+                .lineLimit(lineLimit)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+@available(macOS 15.0, *)
+private struct BilingualDefinitionView: View {
+    let word: String
+    let definition: String
+
+    @State private var chineseDefinition = "正在检查系统中文翻译…"
+    @State private var needsLanguageDownload = false
+    @State private var translationConfiguration: TranslationSession.Configuration?
+
+    private let sourceLanguage = Locale.Language(identifier: "en")
+    private let targetLanguage = Locale.Language(identifier: "zh-Hans")
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            OverlayDetailRow(
+                label: "English",
+                value: definition,
+                lineLimit: 4
+            )
+            HStack(alignment: .top, spacing: 8) {
+                Text("中文")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 88, alignment: .leading)
+
+                Text(chineseDefinition)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if needsLanguageDownload {
+                    Button("下载") {
+                        needsLanguageDownload = false
+                        chineseDefinition = "正在准备系统中文释义…"
+                        translationConfiguration = TranslationSession.Configuration(
+                            source: sourceLanguage,
+                            target: targetLanguage
+                        )
+                    }
+                    .buttonStyle(.borderless)
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .help("Install Apple's on-device English–Chinese translation language pack")
+                }
+            }
+        }
+        .task(id: word) {
+            let status = await LanguageAvailability().status(
+                from: sourceLanguage,
+                to: targetLanguage
+            )
+
+            guard !Task.isCancelled else { return }
+            switch status {
+            case .installed:
+                chineseDefinition = "正在准备系统中文释义…"
+                translationConfiguration = TranslationSession.Configuration(
+                    source: sourceLanguage,
+                    target: targetLanguage
+                )
+            case .supported:
+                chineseDefinition = "需要安装系统中英翻译语言包"
+                needsLanguageDownload = true
+            case .unsupported:
+                chineseDefinition = "当前系统不支持中英翻译"
+                needsLanguageDownload = false
+            @unknown default:
+                chineseDefinition = "系统中文翻译暂不可用"
+                needsLanguageDownload = false
+            }
+        }
+        .translationTask(translationConfiguration) { session in
+            do {
+                let response = try await session.translate(word)
+                await MainActor.run {
+                    chineseDefinition = response.targetText
+                    needsLanguageDownload = false
+                }
+            } catch {
+                await MainActor.run {
+                    chineseDefinition = "需要安装系统中英翻译语言包"
+                    needsLanguageDownload = true
+                    translationConfiguration = nil
+                }
+            }
         }
     }
 }

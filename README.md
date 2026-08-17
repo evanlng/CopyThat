@@ -30,8 +30,8 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **链接**：识别 `http://`、`https://` 和 `www.` 开头的地址，点击即可使用 Safari 打开。
 - **文字**：点击 **Search**，使用 DuckDuckGo、Bing、百度、Google 或自定义搜索引擎搜索。
 - **数学表达式**：本地计算 `12 * (3 + 4)`、乘除、余数和乘方，点击 **Copy Result** 复制结果。
-- **英文单词**：按需调用 macOS 已安装的本地词典，直接在浮窗显示简短词义。
-- **单个汉字**：本地生成拼音，点击 **Details** 查看拼音与系统词典释义。
+- **英文单词**：自动展开英文词典释义；系统中英语言包已安装时自动补充中文词义，未安装时由用户点击下载。
+- **单个汉字**：直接在浮窗显示拼音和系统词典释义，**Details** 可打开更大的阅读窗口。
 - **电话号码**：点击 **Call**，交给 macOS 的 `tel:` 处理程序拨打。
 - **邮箱地址**：点击 **Compose**，打开默认邮件 App 并自动填入收件人。
 - **Finder 文件**：点击 **Show in Finder**，直接显示文件所在位置。
@@ -58,7 +58,8 @@ CopyThat **不是剪贴板历史管理器**：
 - 不记录剪贴板原文
 - 不包含统计、遥测或自动更新服务
 
-所有内容识别均在 Mac 本地完成。只有当你主动点击 **Search**、**Open Safari**、
+所有内容识别均在 Mac 本地完成。中英翻译由 macOS 系统语言模型处理；如果尚未安装语言包，
+浮窗会显示 **下载** 按钮，只有用户点击后 macOS 才会显示安装界面。语言包不会打包进 CopyThat。只有当你主动点击 **Search**、**Open Safari**、
 **Call** 或其他外部操作时，对应内容才会交给系统 App 或你选择的搜索引擎。
 
 ### 下载与安装
@@ -96,7 +97,7 @@ Developer ID 签名和 Apple 公证。
 - 文本只短暂保留最多 1,000 个字符；文件最多读取 20 个 URL。
 - 图片仅生成最大 240 px 的临时缩略图，不写入磁盘或缓存。
 - 快速连续复制会复用同一个浮窗和 SwiftUI hosting view。
-- 2.0 Apple Silicon Release 连续三次空闲采样均为 0.0% CPU，常驻内存约 18 MB。
+- 2.0 Apple Silicon Release（含系统翻译接口）连续三次空闲采样均为 0.0% CPU，常驻内存约 25 MB。
 
 ### 已知限制
 
@@ -128,8 +129,8 @@ assistant that recognizes the copied content and offers the most useful next act
 - **Links**: recognizes `http://`, `https://`, and `www.` addresses and opens them in Safari.
 - **Text**: searches with DuckDuckGo, Bing, Baidu, Google, or a custom search engine.
 - **Math expressions**: locally evaluates bounded expressions such as `12 * (3 + 4)` and offers **Copy Result**.
-- **English words**: queries dictionaries already installed by macOS and shows a short local definition.
-- **Single Chinese characters**: generates pinyin locally and opens pinyin and dictionary details on demand.
+- **English words**: automatically expands the local English definition and adds a Chinese meaning when Apple's on-device language pack is installed; otherwise the HUD offers an explicit download button.
+- **Single Chinese characters**: shows pinyin and the local dictionary definition directly in the HUD, with a larger optional details window.
 - **Phone numbers**: hands the number to the macOS `tel:` handler through **Call**.
 - **Email addresses**: opens the default mail app with the recipient filled in through **Compose**.
 - **Finder files**: reveals copied files through **Show in Finder**.
@@ -158,7 +159,10 @@ CopyThat is **not a clipboard manager**:
 - It does not log copied text.
 - It contains no analytics, telemetry, or update service.
 
-All content detection runs locally. Copied data is handed to another app or a
+All content detection runs locally. English-to-Chinese translation uses the
+macOS system language model. If its language pack is missing, the HUD offers a
+**Download** button and macOS shows the installation UI only after the user clicks it.
+That model is not bundled with CopyThat. Copied data is handed to another app or a
 search engine only after you explicitly click an external action such as
 **Search**, **Open Safari**, or **Call**.
 
@@ -198,7 +202,7 @@ The built product is `CopyThat.app`; its Simplified Chinese display name is “�
 - At most 1,000 text characters and 20 file URLs are retained for the short-lived HUD.
 - Images become temporary thumbnails no larger than 240 px and are never written to disk.
 - Rapid copies reuse the same panel and SwiftUI hosting view.
-- Three idle samples of the 2.0 Apple Silicon Release reported 0.0% CPU and about 18 MB of memory.
+- Three idle samples of the 2.0 Apple Silicon Release with the system translation interface reported 0.0% CPU and about 25 MB of memory.
 
 ### Known limitation
 
