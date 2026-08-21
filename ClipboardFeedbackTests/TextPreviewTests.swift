@@ -59,6 +59,15 @@ final class TextPreviewTests: XCTestCase {
         XCTAssertEqual(configuration.activePollLimit, 15)
     }
 
+    func testClipboardChangeGateSuppressesUnchangedClipboardContent() {
+        var gate = ClipboardChangeGate()
+        gate.reset(to: .text("previous copy"))
+
+        XCTAssertFalse(gate.shouldNotify(for: .text("previous copy")))
+        XCTAssertTrue(gate.shouldNotify(for: .text("new copy")))
+        XCTAssertFalse(gate.shouldNotify(for: .text("new copy")))
+    }
+
     func testHUDIsExactlyCenteredInVisibleScreenFrame() {
         let frame = NSRect(x: 100, y: 40, width: 1_440, height: 860)
         let size = NSSize(width: 400, height: 100)

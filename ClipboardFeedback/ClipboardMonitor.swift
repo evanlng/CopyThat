@@ -17,6 +17,56 @@ struct ClipboardMonitorConfiguration: Equatable {
     }
 }
 
+struct ClipboardChangeGate {
+    private var lastFingerprint: Int?
+
+    mutating func reset(to content: ClipboardContent) {
+        lastFingerprint = fingerprint(for: content)
+    }
+
+    mutating func shouldNotify(for content: ClipboardContent) -> Bool {
+        guard let fingerprint = fingerprint(for: content) else {
+            lastFingerprint = nil
+            return true
+        }
+        guard fingerprint != lastFingerprint else { return false }
+        lastFingerprint = fingerprint
+        return true
+    }
+
+    private func fingerprint(for content: ClipboardContent) -> Int? {
+        var hasher = Hasher()
+        switch content {
+        case .text(let text):
+            hasher.combine(0); hasher.combine(text)
+        case .calculation(let expression, let result):
+            hasher.combine(1); hasher.combine(expression); hasher.combine(result)
+        case .englishWord(let word, let definition):
+            hasher.combine(2); hasher.combine(word); hasher.combine(definition)
+        case .chineseCharacter(let character, let pinyin, let definition):
+            hasher.combine(3); hasher.combine(character); hasher.combine(pinyin)
+            hasher.combine(definition)
+        case .link(let url):
+            hasher.combine(4); hasher.combine(url)
+        case .phoneNumber(let display, let normalized):
+            hasher.combine(5); hasher.combine(display); hasher.combine(normalized)
+        case .emailAddress(let email):
+            hasher.combine(6); hasher.combine(email)
+        case .code(let language, let preview, let source):
+            hasher.combine(7); hasher.combine(language); hasher.combine(preview)
+            hasher.combine(source)
+        case .files(let urls, let totalCount):
+            hasher.combine(8); hasher.combine(urls); hasher.combine(totalCount)
+        case .image, .other:
+            // A thumbnail is intentionally not retained or re-encoded merely
+            // for deduplication. Preserve notifications for these uncommon
+            // content kinds rather than risk suppressing a different image.
+            return nil
+        }
+        return hasher.finalize()
+    }
+}
+
 @MainActor
 final class ClipboardMonitor {
     typealias ChangeHandler = @MainActor (ClipboardContent) -> Void
@@ -30,6 +80,7 @@ final class ClipboardMonitor {
     private var timer: Timer?
     private var remainingActivePolls = 0
     private var currentInterval: TimeInterval?
+    private var changeGate = ClipboardChangeGate()
 
     init(
         pasteboard: NSPasteboard = .general,
@@ -52,6 +103,7 @@ final class ClipboardMonitor {
         guard timer == nil else { return }
 
         lastChangeCount = pasteboard.changeCount
+        changeGate.reset(to: analyzeCurrentContent())
         remainingActivePolls = 0
         installTimer(interval: configuration.idleInterval)
     }
@@ -98,10 +150,15 @@ final class ClipboardMonitor {
         remainingActivePolls = configuration.activePollLimit
         installTimer(interval: configuration.activeInterval)
 
-        // The monitor retains no content after handing off this one analysis.
-        onChange(analyzer.analyze(
+        let content = analyzeCurrentContent()
+        guard changeGate.shouldNotify(for: content) else { return }
+        onChange(content)
+    }
+
+    private func analyzeCurrentContent() -> ClipboardContent {
+        analyzer.analyze(
             pasteboard,
             enabledKinds: enabledKindsProvider()
-        ))
+        )
     }
 }
