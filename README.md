@@ -1,4 +1,4 @@
-# CopyThat（牛马）3.1.0
+# CopyThat（牛马）3.2.0
 
 ![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
@@ -43,6 +43,14 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **插件安装管理**：内置插件可暂停、删除及重新安装；也可从“插件”设置页导入轻量的 `.copythatplugin` 操作插件。
 - **安全软件更新**：可选择自动检测，或随时手动检查；从 GitHub 下载 DMG，并由用户手动拖入“应用程序”完成替换。
 
+### 3.2.0 图片文件插件与多操作按钮
+
+浮窗现在最多可显示两个适用操作。导入
+[`EditImageFileInPreview.copythatplugin`](Examples/EditImageFileInPreview.copythatplugin)
+后，从 Finder 复制 PNG、JPEG、HEIC、TIFF、GIF 或 WebP 图片文件，会同时显示
+**在预览中编辑** 与 **在访达中显示**，由你选择下一步；直接复制图片仍使用原有
+[`EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin)。
+
 ### 3.1.0 可选自动更新
 
 “设置 → 通用 → 软件更新”新增 **自动检测版本更新** 开关（默认关闭）和
@@ -78,7 +86,9 @@ Swift、动态库、Shell、辅助进程和后台服务仍然不受支持。
 仓库中的 [`OpenInMaps.copythatplugin`](Examples/OpenInMaps.copythatplugin) 是可直接导入的示例。
 [`EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin) 展示了图片插件：
 它通过 Host API 请求使用 macOS“预览”打开复制的图片。
-多个外部插件同时匹配时，列表中排在最前且已启用的插件提供浮窗按钮；最新安装的排在最前。
+[`EditImageFileInPreview.copythatplugin`](Examples/EditImageFileInPreview.copythatplugin)
+适用于从 Finder 复制的图片文件；导入后会与内置“在访达中显示”同时出现，方便选择。
+浮窗最多显示两个适用操作；多个外部插件同时匹配时，列表中排在最前且已启用的操作优先显示。
 
 ### 2.1 多语言与插件管理
 
@@ -195,6 +205,14 @@ assistant that recognizes the copied content and offers the most useful next act
 - **Plugin installation controls**: built-in plugins can be paused, removed, and reinstalled; lightweight `.copythatplugin` action manifests can also be imported from the Plugins settings page.
 - **Secure software updates**: optionally checks automatically, or on demand; downloads a GitHub DMG for a user-controlled drag-to-Applications replacement.
 
+### 3.2.0 image-file plugin and multiple actions
+
+The HUD can now show up to two applicable actions. Import
+[`EditImageFileInPreview.copythatplugin`](Examples/EditImageFileInPreview.copythatplugin)
+to show **Edit in Preview** and **Show in Finder** together when PNG, JPEG,
+HEIC, TIFF, GIF, or WebP files are copied from Finder. Directly copied image
+data continues to use [`EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin).
+
 ### 3.1.0 optional automatic updates
 
 Settings → General → Updates now includes an **Automatically check for updates**
@@ -238,8 +256,10 @@ polling, network request, or helper process.
 [`OpenInMaps.copythatplugin`](Examples/OpenInMaps.copythatplugin) is an importable example.
 [`EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin) demonstrates
 an image plugin that asks the Host API to open the copied image in macOS Preview.
-When multiple imported plugins match, the first enabled one in the list supplies the HUD action;
-the most recently installed plugin appears first.
+[`EditImageFileInPreview.copythatplugin`](Examples/EditImageFileInPreview.copythatplugin)
+does the same for image files copied from Finder and appears alongside the
+built-in **Show in Finder** action. The HUD shows up to two applicable actions;
+the most recently installed plugin has priority when more actions match.
 
 ### 2.1 localization and plugin management
 

@@ -8,14 +8,14 @@ CopyThat 2.2 also supports data-only `.copythatplugin` manifests for simple
 HTTPS actions. Choose **Settings → Plugins → Install Plugin…** to import one.
 These manifests never load executable code.
 
-The next plugin platform revision adds schema v2 and CopyThat Host API v1.
+The current plugin platform supports schema v2 and CopyThat Host API v2.
 Schema-v2 plugins may include restricted JavaScript that runs only after the
 user clicks the plugin's HUD button. JavaScriptCore receives no macOS APIs
 directly. Every effect passes through a declared, permission-checked Host API;
 Swift, dynamic libraries, shell commands, helpers, and background services are
 still rejected. Schema-v1 HTTPS plugins remain compatible.
 
-## Create a Host API v1 plugin
+## Create a Host API v2 plugin
 
 The included [`EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin)
 shows the complete image-editing workflow. Its important fields are:
@@ -42,7 +42,16 @@ of truth for supported fields and values.
 }
 ```
 
-Host API v1 exposes these functions:
+Host API v2 keeps the same safe JavaScript functions as v1 and adds the
+`imageFiles` match type. It matches Finder copies only when every copied file is
+a recognised image format such as PNG, JPEG, HEIC, TIFF, GIF, or WebP. The HUD
+can show up to two applicable actions together, so an image-file plugin can sit
+beside the built-in **Show in Finder** action.
+
+The included [`EditImageFileInPreview.copythatplugin`](Examples/EditImageFileInPreview.copythatplugin)
+opens copied Finder image files in Preview and requires Host API v2.
+
+Host API functions:
 
 - `copythat.openCopiedContent(bundleIdentifier)` opens the current copied
   content in an installed app. Images and bounded text are written to temporary
@@ -53,14 +62,14 @@ Host API v1 exposes these functions:
   `network.openHTTPS`.
 - `copythat.writeText(text)` writes at most 20,000 characters to the pasteboard.
   Requires `clipboard.writeText`.
-- `copythat.hostAPIVersion` is `1`.
+- `copythat.hostAPIVersion` is `2`.
 
 `run(context)` receives `context.kind`. It receives `context.text` only when the
 plugin declares `clipboard.readText`. A plugin may request only the permissions
 it uses; CopyThat displays them before installation and enforces them again on
 every Host API call.
 
-Host API v1 is restricted but in-process. Install only trusted plugins: a
+Host API v2 is restricted but in-process. Install only trusted plugins: a
 non-terminating JavaScript loop could still make CopyThat unresponsive. A future
 XPC runner can add a killable process boundary without changing the versioned
 plugin interface.
@@ -130,13 +139,16 @@ CopyThat 2.2 还支持只包含数据的 schema v1 `.copythatplugin` 操作清�
 **设置 → 插件 → 安装插件…** 导入。它只能声明匹配内容和 HTTPS 按钮动作，
 不能加载可执行代码。格式示例见 [`Examples/OpenInMaps.copythatplugin`](Examples/OpenInMaps.copythatplugin)。
 
-新的 schema v2 插件可以包含受限 JavaScript，并通过 CopyThat Host API v1 调用
+新的 schema v2 插件可以包含受限 JavaScript，并通过 CopyThat Host API v2 调用
 经过权限检查的通用能力。脚本只有在用户点击插件按钮后才运行，无法直接访问 AppKit、
 文件系统、进程、网络或剪贴板。安装时会显示插件申请的权限，每次调用 Host API 时
-主程序还会再次检查。图片编辑示例见
+主程序还会再次检查。直接复制图片的编辑示例见
 [`Examples/EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin)。
+从访达复制 PNG、JPEG、HEIC、TIFF、GIF、WebP 等图片文件时，可导入
+[`Examples/EditImageFileInPreview.copythatplugin`](Examples/EditImageFileInPreview.copythatplugin)；
+它会和内置“在访达中显示”同时出现，方便选择。
 
-Host API v1 的 JavaScriptCore 仍在主进程内运行，因此只应安装可信插件；死循环脚本
+Host API v2 的 JavaScriptCore 仍在主进程内运行，因此只应安装可信插件；死循环脚本
 仍可能让 App 暂时失去响应。后续可把执行器迁移到可终止的 XPC 进程，同时保持插件接口版本兼容。
 
 新增内容识别时，实现 `ClipboardContentDetector`，然后在

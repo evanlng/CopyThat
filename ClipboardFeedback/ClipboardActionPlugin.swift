@@ -102,12 +102,24 @@ struct ClipboardActionRegistry: Sendable {
         context: ClipboardPluginContext,
         enabledPluginIDs: Set<ClipboardActionPluginID>
     ) -> ClipboardActionDescriptor? {
+        actions(
+            for: content,
+            context: context,
+            enabledPluginIDs: enabledPluginIDs
+        ).first
+    }
+
+    func actions(
+        for content: ClipboardContent,
+        context: ClipboardPluginContext,
+        enabledPluginIDs: Set<ClipboardActionPluginID>
+    ) -> [ClipboardActionDescriptor] {
         for plugin in plugins where enabledPluginIDs.contains(plugin.id) {
             if let action = plugin.action(for: content, context: context) {
-                return action
+                return [action]
             }
         }
-        return nil
+        return []
     }
 }
 

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "minimumHostAPIVersion": 2,
+  "identifier": "com.copythat.example.edit-image-file-in-preview",
+  "name": {
+    "en": "Edit Image File in Preview",
+    "zh-Hans": "在预览中编辑图片文件"
+  },
+  "description": {
+    "en": "Open copied Finder image files in the macOS Preview app.",
+    "zh-Hans": "使用 macOS“预览”打开从访达复制的图片文件。"
+  },
+  "systemImage": "pencil.and.scribble",
+  "matches": [
+    "imageFiles"
+  ],
+  "permissions": [
+    "clipboard.readFiles",
+    "system.openApplication"
+  ],
+  "action": {
+    "type": "runScript",
+    "title": {
+      "en": "Edit in Preview",
+      "zh-Hans": "在预览中编辑"
+    }
+  },
+  "script": "function run(context) { return copythat.openCopiedContent(\"com.apple.Preview\"); }"
+}

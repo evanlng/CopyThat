@@ -63,7 +63,7 @@ final class OverlayManager {
             content: content,
             glassEffectStrength: metrics.strength,
             usesNativeGlassBackground: usesNativeGlass,
-            primaryAction: content.primaryAction(
+            actions: content.actions(
                 using: settings.activeSearchProvider,
                 locale: settings.resolvedLocale,
                 declarativePlugins: settings.enabledDeclarativePlugins,

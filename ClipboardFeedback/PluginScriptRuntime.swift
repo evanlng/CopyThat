@@ -178,7 +178,7 @@ private enum CopiedContentApplicationBridge {
             urls = [try materializeCurrentImage(
                 expectedChangeCount: content.pasteboardChangeCount
             )]
-        case .files:
+        case .files, .imageFiles:
             try require(.readFiles, in: permissions)
             guard !content.fileURLs.isEmpty else {
                 throw PluginRuntimeError.invalidArgument

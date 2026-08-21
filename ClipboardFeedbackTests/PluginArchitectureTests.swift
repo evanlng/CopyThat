@@ -213,6 +213,27 @@ final class PluginArchitectureTests: XCTestCase {
         XCTAssertEqual(manifest.action.type, .runScript)
     }
 
+    func testImageFilePluginAddsPreviewAlongsideFinderAction() throws {
+        let data = try Data(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Examples/EditImageFileInPreview.copythatplugin"))
+        let manifest = try DeclarativePluginCodec.decodeAndValidate(data)
+        let url = URL(fileURLWithPath: "/tmp/example.heic")
+        let content = ClipboardContent.files([url], totalCount: 1)
+        let actions = content.actions(declarativePlugins: [manifest])
+
+        XCTAssertEqual(manifest.minimumHostAPIVersion, 2)
+        XCTAssertEqual(manifest.matches, [.imageFiles])
+        XCTAssertEqual(actions.map(\.title), ["Edit in Preview", "Show in Finder"])
+        guard case .runPlugin(let invocation) = actions.first?.target else {
+            return XCTFail("Expected Preview plugin action")
+        }
+        XCTAssertEqual(invocation.content.kind, .imageFiles)
+        XCTAssertTrue(invocation.permissions.contains(.readFiles))
+        XCTAssertEqual(actions.last?.target, .external(.revealInFinder([url])))
+    }
+
     func testScriptPluginRejectsDuplicatePermissions() {
         let data = Data(#"""
         {

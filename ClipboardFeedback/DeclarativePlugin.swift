@@ -1,13 +1,14 @@
 import AppKit
 import Foundation
 import JavaScriptCore
+import UniformTypeIdentifiers
 
 /// A versioned plugin manifest. Schema v1 remains a data-only HTTPS action.
 /// Schema v2 may run bounded JavaScript after an explicit user click. The
 /// script receives no system APIs except permission-checked Host API bridges.
 struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
     static let currentSchemaVersion = 2
-    static let currentHostAPIVersion = 1
+    static let currentHostAPIVersion = 2
     static let maximumFileSize = 64 * 1_024
     static let maximumInstalledPlugins = 32
     static let maximumScriptCharacters = 32_000
@@ -39,27 +40,27 @@ struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
             : systemImage
     }
 
-    func action(
+    func actions(
         for content: ClipboardContent,
         locale: InterfaceLocale
-    ) -> ClipboardActionDescriptor? {
+    ) -> [ClipboardActionDescriptor] {
         guard let input = content.declarativePluginInput,
-              matches.contains(input.kind) else {
-            return nil
+              matches(input) else {
+            return []
         }
 
         switch action.type {
         case .openURL:
             guard let value = input.textValue,
-                  let url = action.url(for: value) else { return nil }
-            return ClipboardActionDescriptor(
+                  let url = action.url(for: value) else { return [] }
+            return [ClipboardActionDescriptor(
                 title: action.title.value(in: locale),
                 systemImage: resolvedSystemImage,
                 target: .external(.openDefault(url))
-            )
+            )]
         case .runScript:
-            guard let script else { return nil }
-            return ClipboardActionDescriptor(
+            guard let script else { return [] }
+            return [ClipboardActionDescriptor(
                 title: action.title.value(in: locale),
                 systemImage: resolvedSystemImage,
                 target: .runPlugin(
@@ -70,8 +71,22 @@ struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
                         content: input
                     )
                 )
-            )
+            )]
         }
+    }
+
+    func action(
+        for content: ClipboardContent,
+        locale: InterfaceLocale
+    ) -> ClipboardActionDescriptor? {
+        actions(for: content, locale: locale).first
+    }
+
+    private func matches(_ input: PluginContentInput) -> Bool {
+        if input.kind == .imageFiles {
+            return matches.contains(.files) || matches.contains(.imageFiles)
+        }
+        return matches.contains(input.kind)
     }
 }
 
@@ -104,6 +119,7 @@ enum DeclarativePluginContentKind: String, Codable, CaseIterable {
     case emailAddress
     case code
     case files
+    case imageFiles
     case image
     case other
 }
@@ -400,7 +416,10 @@ private extension ClipboardContent {
         case .code(_, let preview, let source):
             return PluginContentInput(kind: .code, textValue: source ?? preview)
         case .files(let urls, _):
-            return PluginContentInput(kind: .files, textValue: nil, fileURLs: urls)
+            let kind: DeclarativePluginContentKind = urls.allSatisfy(isImageFile)
+                ? .imageFiles
+                : .files
+            return PluginContentInput(kind: kind, textValue: nil, fileURLs: urls)
         case .image:
             return PluginContentInput(
                 kind: .image,
@@ -410,5 +429,13 @@ private extension ClipboardContent {
         case .other:
             return PluginContentInput(kind: .other, textValue: nil)
         }
+    }
+
+    private func isImageFile(_ url: URL) -> Bool {
+        guard url.isFileURL,
+              let type = UTType(filenameExtension: url.pathExtension) else {
+            return false
+        }
+        return type.conforms(to: .image)
     }
 }

@@ -204,13 +204,26 @@ enum ClipboardContent: Equatable {
             ClipboardActionPluginID.allCases
         )
     ) -> ClipboardActionDescriptor? {
-        for plugin in declarativePlugins {
-            if let action = plugin.action(for: self, locale: locale) {
-                return action
-            }
-        }
+        actions(
+            using: searchProvider,
+            locale: locale,
+            declarativePlugins: declarativePlugins,
+            enabledPluginIDs: enabledPluginIDs
+        ).first
+    }
 
-        return ClipboardActionRegistry.builtIn.primaryAction(
+    func actions(
+        using searchProvider: WebSearchProvider? = .duckDuckGo,
+        locale: InterfaceLocale = .english,
+        declarativePlugins: [DeclarativePluginManifest] = [],
+        enabledPluginIDs: Set<ClipboardActionPluginID> = Set(
+            ClipboardActionPluginID.allCases
+        )
+    ) -> [ClipboardActionDescriptor] {
+        let declarativeActions = declarativePlugins.flatMap {
+            $0.actions(for: self, locale: locale)
+        }
+        let builtInActions = ClipboardActionRegistry.builtIn.actions(
             for: self,
             context: ClipboardPluginContext(
                 searchProvider: searchProvider,
@@ -218,6 +231,8 @@ enum ClipboardContent: Equatable {
             ),
             enabledPluginIDs: enabledPluginIDs
         )
+        var seen = Set<String>()
+        return (declarativeActions + builtInActions).filter { seen.insert($0.id).inserted }
     }
 }
 
