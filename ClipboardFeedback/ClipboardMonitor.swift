@@ -57,10 +57,10 @@ struct ClipboardChangeGate {
             hasher.combine(source)
         case .files(let urls, let totalCount):
             hasher.combine(8); hasher.combine(urls); hasher.combine(totalCount)
-        case .image, .other:
-            // A thumbnail is intentionally not retained or re-encoded merely
-            // for deduplication. Preserve notifications for these uncommon
-            // content kinds rather than risk suppressing a different image.
+        case .image(let preview):
+            guard let preview else { return nil }
+            hasher.combine(9); hasher.combine(preview.contentFingerprint)
+        case .other:
             return nil
         }
         return hasher.finalize()

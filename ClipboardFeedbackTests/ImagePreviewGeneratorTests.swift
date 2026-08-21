@@ -23,5 +23,10 @@ final class ImagePreviewGeneratorTests: XCTestCase {
         XCTAssertNotNil(preview)
         XCTAssertLessThanOrEqual(preview?.pixelSize.width ?? .infinity, 120)
         XCTAssertLessThanOrEqual(preview?.pixelSize.height ?? .infinity, 120)
+
+        guard let preview else { return }
+        var gate = ClipboardChangeGate()
+        gate.reset(to: .image(thumbnail: preview))
+        XCTAssertFalse(gate.shouldNotify(for: .image(thumbnail: preview)))
     }
 }

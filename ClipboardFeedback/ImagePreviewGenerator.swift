@@ -4,9 +4,10 @@ import ImageIO
 struct ClipboardImagePreview: Equatable {
     let image: NSImage
     let pixelSize: CGSize
+    let contentFingerprint: Int
 
     static func == (lhs: ClipboardImagePreview, rhs: ClipboardImagePreview) -> Bool {
-        lhs.pixelSize == rhs.pixelSize
+        lhs.contentFingerprint == rhs.contentFingerprint
     }
 }
 
@@ -49,8 +50,25 @@ struct ImagePreviewGenerator {
             let pixelSize = CGSize(width: thumbnail.width, height: thumbnail.height)
             return ClipboardImagePreview(
                 image: NSImage(cgImage: thumbnail, size: pixelSize),
-                pixelSize: pixelSize
+                pixelSize: pixelSize,
+                contentFingerprint: fingerprint(of: thumbnail)
             )
         }
+    }
+
+    private func fingerprint(of image: CGImage) -> Int {
+        var hasher = Hasher()
+        hasher.combine(image.width)
+        hasher.combine(image.height)
+        hasher.combine(image.bitsPerPixel)
+        hasher.combine(image.bytesPerRow)
+        if let data = image.dataProvider?.data,
+           let bytes = CFDataGetBytePtr(data) {
+            hasher.combine(bytes: UnsafeRawBufferPointer(
+                start: bytes,
+                count: CFDataGetLength(data)
+            ))
+        }
+        return hasher.finalize()
     }
 }
