@@ -220,8 +220,17 @@ enum ClipboardContent: Equatable {
             ClipboardActionPluginID.allCases
         )
     ) -> [ClipboardActionDescriptor] {
-        let declarativeActions = declarativePlugins.flatMap {
-            $0.actions(for: self, locale: locale)
+        let declarativeActions: [ClipboardActionDescriptor]
+        if declarativePlugins.isEmpty {
+            declarativeActions = []
+        } else if let input = declarativePluginInput(
+            captureImageData: declarativePlugins.contains(where: \.acceptsImageFiles)
+        ) {
+            declarativeActions = declarativePlugins.flatMap {
+                $0.actions(for: input, locale: locale)
+            }
+        } else {
+            declarativeActions = []
         }
         let builtInActions = ClipboardActionRegistry.builtIn.actions(
             for: self,

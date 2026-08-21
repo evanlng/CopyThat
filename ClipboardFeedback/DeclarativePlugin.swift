@@ -44,10 +44,17 @@ struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
         for content: ClipboardContent,
         locale: InterfaceLocale
     ) -> [ClipboardActionDescriptor] {
-        guard let input = content.declarativePluginInput,
-              matches(input) else {
+        guard let input = content.declarativePluginInput() else {
             return []
         }
+        return actions(for: input, locale: locale)
+    }
+
+    func actions(
+        for input: PluginContentInput,
+        locale: InterfaceLocale
+    ) -> [ClipboardActionDescriptor] {
+        guard matches(input) else { return [] }
 
         switch action.type {
         case .openURL:
@@ -84,9 +91,13 @@ struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
 
     private func matches(_ input: PluginContentInput) -> Bool {
         if input.kind == .imageFiles {
-            return matches.contains(.files) || matches.contains(.imageFiles)
+            return acceptsImageFiles
         }
         return matches.contains(input.kind)
+    }
+
+    var acceptsImageFiles: Bool {
+        matches.contains(.files) || matches.contains(.imageFiles)
     }
 }
 
@@ -402,8 +413,10 @@ struct PluginScriptInvocation: Equatable {
     let content: PluginContentInput
 }
 
-private extension ClipboardContent {
-    var declarativePluginInput: PluginContentInput? {
+extension ClipboardContent {
+    func declarativePluginInput(
+        captureImageData: Bool = true
+    ) -> PluginContentInput? {
         switch self {
         case .text(let text):
             return PluginContentInput(kind: .text, textValue: text)
@@ -425,7 +438,9 @@ private extension ClipboardContent {
             let kind: DeclarativePluginContentKind = urls.allSatisfy(isImageFile)
                 ? .imageFiles
                 : .files
-            let capturedImage = kind == .imageFiles && urls.count == 1
+            let capturedImage = captureImageData
+                && kind == .imageFiles
+                && urls.count == 1
                 ? pasteboardImageRepresentation()
                 : nil
             return PluginContentInput(
