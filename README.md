@@ -1,4 +1,4 @@
-# CopyThat（牛马）3.0.1
+# CopyThat（牛马）3.1.0
 
 ![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
@@ -41,6 +41,13 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **插件开关**：内容识别和操作按钮都是独立插件，可在设置中分别启用或关闭。
 - **中英文界面**：默认跟随 macOS 系统语言，也可在设置中固定为简体中文或 English，立即生效。
 - **插件安装管理**：内置插件可暂停、删除及重新安装；也可从“插件”设置页导入轻量的 `.copythatplugin` 操作插件。
+- **安全软件更新**：可选择自动检测，或随时手动检查；从 GitHub 下载 DMG，并由用户手动拖入“应用程序”完成替换。
+
+### 3.1.0 可选自动更新
+
+“设置 → 通用 → 软件更新”新增 **自动检测版本更新** 开关（默认关闭）和
+**立即检查…** 按钮。CopyThat 通过 GitHub 的公开 Release 接口检查新版本，下载
+DMG 后由用户打开并拖入“应用程序”完成替换；GitHub 提供 SHA-256 摘要时会在打开前校验。
 
 ### 3.0.1 设置窗口置前修复
 
@@ -98,9 +105,10 @@ CopyThat **不是剪贴板历史管理器**：
 - 不建立剪贴板数据库
 - 不上传剪贴板内容
 - 不记录剪贴板原文
-- 不包含统计、遥测或自动更新服务
+- 不包含统计或遥测
 
-所有内容识别均在 Mac 本地完成。中英翻译由 macOS 系统语言模型处理；如果尚未安装语言包，
+所有内容识别均在 Mac 本地完成。只有开启自动检测或点击“立即检查”时，软件更新器才会访问
+GitHub 上的更新目录和安装包；剪贴板内容不会包含在更新请求中。中英翻译由 macOS 系统语言模型处理；如果尚未安装语言包，
 浮窗会显示 **下载** 按钮，只有用户点击后 macOS 才会显示安装界面。语言包不会打包进 CopyThat。只有当你主动点击 **Search**、**Open Safari**、
 **Call** 或其他外部操作时，对应内容才会交给系统 App 或你选择的搜索引擎。
 
@@ -119,7 +127,7 @@ Developer ID 签名和 Apple 公证。
 - macOS 14 或更高版本
 - Apple Silicon Mac（arm64）
 - 从源码构建需要 Xcode 27 beta 或更高版本
-- 无第三方依赖
+- 无第三方运行时依赖
 
 ### 从源码运行
 
@@ -185,6 +193,14 @@ assistant that recognizes the copied content and offers the most useful next act
 - **Plugin controls**: content detectors and action buttons can be enabled independently.
 - **English and Chinese UI**: follows the macOS language by default, or can be fixed to Simplified Chinese or English with immediate updates.
 - **Plugin installation controls**: built-in plugins can be paused, removed, and reinstalled; lightweight `.copythatplugin` action manifests can also be imported from the Plugins settings page.
+- **Secure software updates**: optionally checks automatically, or on demand; downloads a GitHub DMG for a user-controlled drag-to-Applications replacement.
+
+### 3.1.0 optional automatic updates
+
+Settings → General → Updates now includes an **Automatically check for updates**
+toggle (off by default) and a **Check Now…** button. CopyThat checks GitHub's
+public Releases API, downloads a DMG, and leaves the final drag-to-Applications
+replacement to the user. It verifies GitHub's SHA-256 digest when one is available.
 
 ### 3.0.1 settings window activation fix
 
@@ -255,9 +271,11 @@ CopyThat is **not a clipboard manager**:
 - It does not create a clipboard database.
 - It does not upload clipboard contents.
 - It does not log copied text.
-- It contains no analytics, telemetry, or update service.
+- It contains no analytics or telemetry.
 
-All content detection runs locally. English-to-Chinese translation uses the
+All content detection runs locally. The updater accesses only the update feed and
+release package on GitHub when automatic checks are enabled or **Check Now…** is
+clicked; clipboard data is never included in update requests. English-to-Chinese translation uses the
 macOS system language model. If its language pack is missing, the HUD offers a
 **Download** button and macOS shows the installation UI only after the user clicks it.
 That model is not bundled with CopyThat. Copied data is handed to another app or a
@@ -280,7 +298,7 @@ Apple notarization.
 - macOS 14 or later
 - Apple Silicon Mac (arm64)
 - Xcode 27 beta or later when building from source
-- No third-party dependencies
+- No third-party runtime dependencies
 
 ### Run from source
 

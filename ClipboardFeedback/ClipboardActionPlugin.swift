@@ -14,10 +14,6 @@ enum ClipboardActionPluginID: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
-        title(in: .english)
-    }
-
     func title(in locale: InterfaceLocale) -> String {
         switch self {
         case .search: return L10n.text("Search", "搜索", locale: locale)
@@ -42,10 +38,6 @@ enum ClipboardActionPluginID: String, CaseIterable, Identifiable {
         case .copyCalculation: return "document.on.document"
         case .characterDetails: return "character.textbox"
         }
-    }
-
-    var subtitle: String {
-        subtitle(in: .english)
     }
 
     func subtitle(in locale: InterfaceLocale) -> String {
@@ -79,7 +71,7 @@ struct ClipboardPluginContext {
 /// They do no work while the clipboard is idle and never mutate content during
 /// recognition. Add future actions by implementing this protocol and registering
 /// one value in ClipboardActionRegistry.builtIn.
-protocol ClipboardActionPlugin {
+protocol ClipboardActionPlugin: Sendable {
     var id: ClipboardActionPluginID { get }
     func action(
         for content: ClipboardContent,
@@ -87,7 +79,7 @@ protocol ClipboardActionPlugin {
     ) -> ClipboardActionDescriptor?
 }
 
-struct ClipboardActionRegistry {
+struct ClipboardActionRegistry: Sendable {
     static let builtIn = ClipboardActionRegistry(plugins: [
         SearchActionPlugin(),
         OpenSafariActionPlugin(),

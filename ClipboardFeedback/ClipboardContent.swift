@@ -31,8 +31,6 @@ enum ClipboardContentKind: String, CaseIterable, Identifiable {
         }
     }
 
-    var subtitle: String { rawValue }
-
     func detail(in locale: InterfaceLocale) -> String {
         switch self {
         case .calculation:

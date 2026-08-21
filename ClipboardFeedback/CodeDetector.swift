@@ -158,8 +158,9 @@ struct CodeDetector {
             "select ", " from ", "where ", "insert into ", "update ",
             "delete from ", "create table ", "alter table ", "join "
         ]
+        let paddedLowercased = " \(lowercased) "
         scores[.sql, default: 0] += sqlTokens.filter { token in
-            (" " + lowercased + " ").contains(token)
+            paddedLowercased.contains(token)
         }.count * 2
         if trimmed.contains(";") {
             scores[.sql, default: 0] += 1

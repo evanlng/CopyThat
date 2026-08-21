@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        UpdateManager.shared.start()
         enabledCancellable = SettingsManager.shared.$isEnabled
             .removeDuplicates()
             .sink { [weak self] enabled in

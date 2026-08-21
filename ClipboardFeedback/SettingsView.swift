@@ -61,6 +61,7 @@ private final class SettingsWindowObservationView: NSView {
 
 private struct GeneralSettingsView: View {
     @ObservedObject var settings: SettingsManager
+    @ObservedObject private var updates = UpdateManager.shared
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
@@ -151,6 +152,38 @@ private struct GeneralSettingsView: View {
 
                 if let message = settings.launchAtLoginMessage {
                     Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section(t("Updates", "软件更新")) {
+                Toggle(
+                    t("Automatically check for updates", "自动检测版本更新"),
+                    isOn: Binding(
+                        get: { updates.automaticallyChecksForUpdates },
+                        set: { updates.setAutomaticallyChecksForUpdates($0) }
+                    )
+                )
+
+                HStack {
+                    Text(t(
+                        "Download the GitHub DMG, then drag CopyThat into Applications to replace it.",
+                        "从 GitHub 下载 DMG，然后将 CopyThat 拖入“应用程序”完成替换。"
+                    ))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Button(t("Check Now…", "立即检查…")) {
+                        updates.checkForUpdates()
+                    }
+                    .disabled(!updates.canCheckForUpdates)
+                }
+
+                if let status = updates.statusMessage {
+                    Text(status)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

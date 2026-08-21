@@ -4,9 +4,8 @@ import XCTest
 
 final class ClipboardContentTests: XCTestCase {
     func testOversizedTextSkipsSemanticDetectorsAndRetainsOnlyPreviewBound() {
-        let detector = CountingContentDetector()
         let analyzer = ClipboardAnalyzer(
-            registry: ClipboardDetectionRegistry(detectors: [detector])
+            registry: ClipboardDetectionRegistry(detectors: [UnexpectedContentDetector()])
         )
         let pasteboard = NSPasteboard(
             name: NSPasteboard.Name("CopyThat.OversizedText.\(UUID().uuidString)")
@@ -19,7 +18,6 @@ final class ClipboardContentTests: XCTestCase {
 
         let content = analyzer.analyze(pasteboard, enabledKinds: [.link])
 
-        XCTAssertEqual(detector.callCount, 0)
         XCTAssertEqual(content.preview?.count, 110)
         if case .text(let retained) = content {
             XCTAssertEqual(retained.count, 1_000)
@@ -217,12 +215,11 @@ final class ClipboardContentTests: XCTestCase {
     }
 }
 
-private final class CountingContentDetector: ClipboardContentDetector {
+private struct UnexpectedContentDetector: ClipboardContentDetector {
     let kind = ClipboardContentKind.link
-    private(set) var callCount = 0
 
     func detect(in text: String) -> ClipboardContent? {
-        callCount += 1
+        XCTFail("Oversized text must skip semantic detectors")
         return nil
     }
 }

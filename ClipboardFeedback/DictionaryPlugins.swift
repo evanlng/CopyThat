@@ -1,7 +1,7 @@
 import CoreServices
 import Foundation
 
-protocol LocalDefinitionProviding {
+protocol LocalDefinitionProviding: Sendable {
     func definition(for term: String) -> String?
 }
 

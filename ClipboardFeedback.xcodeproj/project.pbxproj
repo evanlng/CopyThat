@@ -35,6 +35,7 @@
 		A1000000000000000000001A /* AppLocalization.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000020 /* AppLocalization.swift */; };
 		A1000000000000000000001B /* DeclarativePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000021 /* DeclarativePlugin.swift */; };
 		A1000000000000000000001C /* PluginScriptRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000022 /* PluginScriptRuntime.swift */; };
+		A1000000000000000000001D /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000023 /* UpdateManager.swift */; };
 		A20000000000000000000001 /* URLDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* URLDetectorTests.swift */; };
 		A20000000000000000000002 /* TextPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* TextPreviewTests.swift */; };
 		A20000000000000000000003 /* ClipboardContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* ClipboardContentTests.swift */; };
@@ -42,6 +43,7 @@
 		A20000000000000000000005 /* CodeFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* CodeFormatterTests.swift */; };
 		A20000000000000000000006 /* ImagePreviewGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* ImagePreviewGeneratorTests.swift */; };
 		A20000000000000000000007 /* PluginArchitectureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* PluginArchitectureTests.swift */; };
+		A20000000000000000000008 /* UpdateConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000009 /* UpdateConfigurationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +90,7 @@
 		B10000000000000000000020 /* AppLocalization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLocalization.swift; sourceTree = "<group>"; };
 		B10000000000000000000021 /* DeclarativePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclarativePlugin.swift; sourceTree = "<group>"; };
 		B10000000000000000000022 /* PluginScriptRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScriptRuntime.swift; sourceTree = "<group>"; };
+		B10000000000000000000023 /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* URLDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLDetectorTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* TextPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPreviewTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000003 /* ClipboardFeedbackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClipboardFeedbackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +99,7 @@
 		B20000000000000000000006 /* CodeFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeFormatterTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000007 /* ImagePreviewGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePreviewGeneratorTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000008 /* PluginArchitectureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginArchitectureTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000009 /* UpdateConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateConfigurationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,6 +143,7 @@
 				B1000000000000000000001C /* ClipboardActionPlugin.swift */,
 				B10000000000000000000021 /* DeclarativePlugin.swift */,
 				B10000000000000000000022 /* PluginScriptRuntime.swift */,
+				B10000000000000000000023 /* UpdateManager.swift */,
 				B1000000000000000000001D /* DictionaryPlugins.swift */,
 				B1000000000000000000001E /* MathExpressionPlugin.swift */,
 				B10000000000000000000013 /* CodeDetector.swift */,
@@ -182,6 +187,7 @@
 				B20000000000000000000001 /* URLDetectorTests.swift */,
 				B20000000000000000000002 /* TextPreviewTests.swift */,
 				B20000000000000000000008 /* PluginArchitectureTests.swift */,
+				B20000000000000000000009 /* UpdateConfigurationTests.swift */,
 			);
 			path = ClipboardFeedbackTests;
 			sourceTree = "<group>";
@@ -318,6 +324,7 @@
 				A1000000000000000000001A /* AppLocalization.swift in Sources */,
 				A1000000000000000000001B /* DeclarativePlugin.swift in Sources */,
 				A1000000000000000000001C /* PluginScriptRuntime.swift in Sources */,
+				A1000000000000000000001D /* UpdateManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -332,6 +339,7 @@
 				A20000000000000000000005 /* CodeFormatterTests.swift in Sources */,
 				A20000000000000000000006 /* ImagePreviewGeneratorTests.swift in Sources */,
 				A20000000000000000000007 /* PluginArchitectureTests.swift in Sources */,
+				A20000000000000000000008 /* UpdateConfigurationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -413,7 +421,7 @@
 				CODE_SIGN_ENTITLEMENTS = ClipboardFeedback/ClipboardFeedback.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -422,7 +430,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.1;
+				MARKETING_VERSION = 3.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.copythat.app;
 				PRODUCT_MODULE_NAME = ClipboardFeedback;
 				PRODUCT_NAME = CopyThat;
@@ -439,7 +447,7 @@
 				CODE_SIGN_ENTITLEMENTS = ClipboardFeedback/ClipboardFeedback.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -448,7 +456,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.1;
+				MARKETING_VERSION = 3.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.copythat.app;
 				PRODUCT_MODULE_NAME = ClipboardFeedback;
 				PRODUCT_NAME = CopyThat;

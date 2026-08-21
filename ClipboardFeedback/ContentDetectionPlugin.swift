@@ -2,12 +2,12 @@ import Foundation
 
 /// Safe, compile-time plugin point for adding content recognition. Detectors
 /// run only after changeCount changes and must remain bounded and local.
-protocol ClipboardContentDetector {
+protocol ClipboardContentDetector: Sendable {
     var kind: ClipboardContentKind { get }
     func detect(in text: String) -> ClipboardContent?
 }
 
-struct ClipboardDetectionRegistry {
+struct ClipboardDetectionRegistry: Sendable {
     static let builtIn = ClipboardDetectionRegistry(detectors: [
         LinkContentDetector(),
         EmailAddressContentDetector(),
