@@ -1,4 +1,4 @@
-# CopyThat（牛马）3.0.0
+# CopyThat（牛马）3.0.1
 
 ![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
@@ -41,6 +41,11 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **插件开关**：内容识别和操作按钮都是独立插件，可在设置中分别启用或关闭。
 - **中英文界面**：默认跟随 macOS 系统语言，也可在设置中固定为简体中文或 English，立即生效。
 - **插件安装管理**：内置插件可暂停、删除及重新安装；也可从“插件”设置页导入轻量的 `.copythatplugin` 操作插件。
+
+### 3.0.1 设置窗口置前修复
+
+从菜单栏打开“设置…”时，CopyThat 会显式激活自身并将设置窗口恢复、置前和设为
+key window，避免窗口被其他 App 遮挡。设置窗口保持普通层级，不会长期浮在其他应用上方。
 
 ### 3.0 统一插件接口
 
@@ -180,6 +185,12 @@ assistant that recognizes the copied content and offers the most useful next act
 - **Plugin controls**: content detectors and action buttons can be enabled independently.
 - **English and Chinese UI**: follows the macOS language by default, or can be fixed to Simplified Chinese or English with immediate updates.
 - **Plugin installation controls**: built-in plugins can be paused, removed, and reinstalled; lightweight `.copythatplugin` action manifests can also be imported from the Plugins settings page.
+
+### 3.0.1 settings window activation fix
+
+Opening **Settings…** from the menu bar now explicitly activates CopyThat,
+restores the settings window, brings it forward, and makes it key. The window
+keeps a normal level and therefore does not remain permanently above other apps.
 
 ### 3.0 unified plugin interface
 

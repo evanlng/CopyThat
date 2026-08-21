@@ -24,10 +24,38 @@ struct ClipboardFeedbackSettingsView: View {
         }
         .environment(\.locale, settings.resolvedLocale.locale)
         .frame(width: 560, height: 440)
+        .background(SettingsWindowAccessor())
     }
 
     private func t(_ english: String, _ chinese: String) -> String {
         L10n.text(english, chinese, locale: settings.resolvedLocale)
+    }
+}
+
+private struct SettingsWindowAccessor: NSViewRepresentable {
+    func makeNSView(context: Context) -> SettingsWindowObservationView {
+        SettingsWindowObservationView()
+    }
+
+    func updateNSView(
+        _ nsView: SettingsWindowObservationView,
+        context: Context
+    ) {
+        nsView.registerWindowIfAvailable()
+    }
+}
+
+private final class SettingsWindowObservationView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        registerWindowIfAvailable()
+    }
+
+    func registerWindowIfAvailable() {
+        guard let window else { return }
+        Task { @MainActor in
+            SettingsWindowPresenter.shared.register(window)
+        }
     }
 }
 
@@ -969,7 +997,7 @@ private struct AboutSettingsView: View {
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "3.0.0"
+            ?? "3.0.1"
     }
 
     private func t(_ english: String, _ chinese: String) -> String {

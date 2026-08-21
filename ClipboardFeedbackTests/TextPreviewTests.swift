@@ -3,6 +3,23 @@ import XCTest
 @testable import ClipboardFeedback
 
 final class TextPreviewTests: XCTestCase {
+    @MainActor
+    func testSettingsWindowUsesNormalPersistentLevel() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 440),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.level = .floating
+        window.hidesOnDeactivate = true
+
+        SettingsWindowPresenter.configure(window)
+
+        XCTAssertEqual(window.level, .normal)
+        XCTAssertFalse(window.hidesOnDeactivate)
+    }
+
     func testCollapsesWhitespaceAndNewlines() {
         XCTAssertEqual(
             TextPreview.make("first line\n\nsecond   line"),
