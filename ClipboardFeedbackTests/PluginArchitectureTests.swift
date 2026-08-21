@@ -155,6 +155,104 @@ final class PluginArchitectureTests: XCTestCase {
         }
     }
 
+    func testScriptPluginCreatesImageInvocationThroughHostAPI() throws {
+        let manifest = try DeclarativePluginCodec.decodeAndValidate(Data(#"""
+        {
+          "schemaVersion": 2,
+          "minimumHostAPIVersion": 1,
+          "identifier": "com.copythat.tests.preview",
+          "name": { "en": "Edit in Preview" },
+          "description": { "en": "Open copied images in Preview." },
+          "systemImage": "pencil.and.scribble",
+          "matches": ["image"],
+          "permissions": ["clipboard.readImage", "system.openApplication"],
+          "action": {
+            "type": "runScript",
+            "title": { "en": "Edit in Preview" }
+          },
+          "script": "function run(context) { return copythat.openCopiedContent('com.apple.Preview'); }"
+        }
+        """#.utf8))
+
+        let action = ClipboardContent.image(thumbnail: nil).primaryAction(
+            declarativePlugins: [manifest]
+        )
+        guard case .runPlugin(let invocation) = action?.target else {
+            return XCTFail("Expected a script plugin action")
+        }
+        XCTAssertEqual(action?.title, "Edit in Preview")
+        XCTAssertEqual(invocation.identifier, "com.copythat.tests.preview")
+        XCTAssertEqual(invocation.content.kind, .image)
+        XCTAssertTrue(invocation.permissions.contains(.readImage))
+        XCTAssertTrue(invocation.permissions.contains(.openApplication))
+    }
+
+    func testV1PluginsRemainCompatibleWithSchemaV2Host() throws {
+        let data = try Data(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Examples/OpenInMaps.copythatplugin"))
+        let manifest = try DeclarativePluginCodec.decodeAndValidate(data)
+        XCTAssertEqual(manifest.schemaVersion, 1)
+        XCTAssertEqual(manifest.action.type, .openURL)
+    }
+
+    func testEditInPreviewExampleIsInstallable() throws {
+        let data = try Data(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Examples/EditInPreview.copythatplugin"))
+        let manifest = try DeclarativePluginCodec.decodeAndValidate(data)
+        XCTAssertEqual(manifest.schemaVersion, 2)
+        XCTAssertEqual(manifest.minimumHostAPIVersion, 1)
+        XCTAssertEqual(manifest.matches, [.image])
+        XCTAssertEqual(
+            Set(manifest.permissions ?? []),
+            [.readImage, .openApplication]
+        )
+        XCTAssertEqual(manifest.action.type, .runScript)
+    }
+
+    func testScriptPluginRejectsDuplicatePermissions() {
+        let data = Data(#"""
+        {
+          "schemaVersion": 2,
+          "minimumHostAPIVersion": 1,
+          "identifier": "com.copythat.tests.duplicate",
+          "name": { "en": "Duplicate" },
+          "description": { "en": "Duplicate permissions." },
+          "systemImage": "puzzlepiece",
+          "matches": ["text"],
+          "permissions": ["clipboard.readText", "clipboard.readText"],
+          "action": { "type": "runScript", "title": { "en": "Run" } },
+          "script": "function run(context) {}"
+        }
+        """#.utf8)
+
+        XCTAssertThrowsError(try DeclarativePluginCodec.decodeAndValidate(data)) {
+            XCTAssertEqual(
+                $0 as? DeclarativePluginValidationError,
+                .invalidPermissions
+            )
+        }
+    }
+
+    @MainActor
+    func testRuntimeEnforcesPermissionOnEveryHostCall() {
+        let invocation = PluginScriptInvocation(
+            identifier: "com.copythat.tests.permissions",
+            script: "function run(context) { copythat.writeText('blocked'); }",
+            permissions: [],
+            content: PluginContentInput(kind: .text, textValue: "input")
+        )
+        XCTAssertThrowsError(try PluginScriptRuntime.perform(invocation)) {
+            XCTAssertEqual(
+                $0 as? PluginRuntimeError,
+                .permissionDenied(DeclarativePluginPermission.writeText.rawValue)
+            )
+        }
+    }
+
     @MainActor
     func testPluginsCanBeRemovedAndInstalledWithoutLosingTheCatalog() {
         let suiteName = "CopyThat.PluginArchitectureTests.\(UUID().uuidString)"

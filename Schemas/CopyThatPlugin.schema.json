@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://copythat.app/schemas/copythat-plugin.schema.json",
+  "title": "CopyThat Plugin",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "identifier",
+    "name",
+    "description",
+    "systemImage",
+    "matches",
+    "action"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "enum": [1, 2]
+    },
+    "minimumHostAPIVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "identifier": {
+      "type": "string",
+      "maxLength": 120,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*(?:\\.[A-Za-z0-9][A-Za-z0-9-]*)+$"
+    },
+    "name": {
+      "$ref": "#/$defs/nameText"
+    },
+    "description": {
+      "$ref": "#/$defs/descriptionText"
+    },
+    "systemImage": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[A-Za-z0-9.]+$"
+    },
+    "matches": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "uniqueItems": true
+    },
+    "permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "clipboard.readText",
+          "clipboard.readImage",
+          "clipboard.readFiles",
+          "clipboard.writeText",
+          "system.openApplication",
+          "network.openHTTPS"
+        ]
+      }
+    },
+    "action": {
+      "type": "object"
+    },
+    "script": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32000
+    }
+  },
+  "oneOf": [
+    {
+      "not": {
+        "anyOf": [
+          { "required": ["minimumHostAPIVersion"] },
+          { "required": ["permissions"] },
+          { "required": ["script"] }
+        ]
+      },
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "matches": {
+          "items": {
+            "enum": [
+              "text",
+              "calculation",
+              "englishWord",
+              "chineseCharacter",
+              "link",
+              "phoneNumber",
+              "emailAddress",
+              "code"
+            ]
+          }
+        },
+        "action": {
+          "$ref": "#/$defs/openURLAction"
+        }
+      }
+    },
+    {
+      "required": [
+        "minimumHostAPIVersion",
+        "permissions",
+        "script"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "minimumHostAPIVersion": { "maximum": 1 },
+        "matches": {
+          "items": {
+            "enum": [
+              "text",
+              "calculation",
+              "englishWord",
+              "chineseCharacter",
+              "link",
+              "phoneNumber",
+              "emailAddress",
+              "code",
+              "files",
+              "image",
+              "other"
+            ]
+          }
+        },
+        "action": {
+          "$ref": "#/$defs/scriptAction"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "localizedText": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["en"],
+      "properties": {
+        "en": {
+          "type": "string",
+          "minLength": 1
+        },
+        "zh-Hans": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "nameText": {
+      "allOf": [
+        { "$ref": "#/$defs/localizedText" },
+        {
+          "properties": {
+            "en": { "maxLength": 60 },
+            "zh-Hans": { "maxLength": 60 }
+          }
+        }
+      ]
+    },
+    "descriptionText": {
+      "allOf": [
+        { "$ref": "#/$defs/localizedText" },
+        {
+          "properties": {
+            "en": { "maxLength": 240 },
+            "zh-Hans": { "maxLength": 240 }
+          }
+        }
+      ]
+    },
+    "buttonText": {
+      "allOf": [
+        { "$ref": "#/$defs/localizedText" },
+        {
+          "properties": {
+            "en": { "maxLength": 40 },
+            "zh-Hans": { "maxLength": 40 }
+          }
+        }
+      ]
+    },
+    "openURLAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "urlTemplate"],
+      "properties": {
+        "type": { "const": "openURL" },
+        "title": { "$ref": "#/$defs/buttonText" },
+        "urlTemplate": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^https://"
+        }
+      }
+    },
+    "scriptAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title"],
+      "properties": {
+        "type": { "const": "runScript" },
+        "title": { "$ref": "#/$defs/buttonText" }
+      }
+    }
+  }
+}

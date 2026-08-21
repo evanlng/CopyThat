@@ -34,6 +34,7 @@
 		A10000000000000000000019 /* PluginReferenceWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001F /* PluginReferenceWindow.swift */; };
 		A1000000000000000000001A /* AppLocalization.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000020 /* AppLocalization.swift */; };
 		A1000000000000000000001B /* DeclarativePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000021 /* DeclarativePlugin.swift */; };
+		A1000000000000000000001C /* PluginScriptRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000022 /* PluginScriptRuntime.swift */; };
 		A20000000000000000000001 /* URLDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* URLDetectorTests.swift */; };
 		A20000000000000000000002 /* TextPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* TextPreviewTests.swift */; };
 		A20000000000000000000003 /* ClipboardContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* ClipboardContentTests.swift */; };
@@ -86,6 +87,7 @@
 		B1000000000000000000001F /* PluginReferenceWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginReferenceWindow.swift; sourceTree = "<group>"; };
 		B10000000000000000000020 /* AppLocalization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLocalization.swift; sourceTree = "<group>"; };
 		B10000000000000000000021 /* DeclarativePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclarativePlugin.swift; sourceTree = "<group>"; };
+		B10000000000000000000022 /* PluginScriptRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PluginScriptRuntime.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* URLDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLDetectorTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* TextPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPreviewTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000003 /* ClipboardFeedbackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClipboardFeedbackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -136,6 +138,7 @@
 				B1000000000000000000000F /* ContentDetectionPlugin.swift */,
 				B1000000000000000000001C /* ClipboardActionPlugin.swift */,
 				B10000000000000000000021 /* DeclarativePlugin.swift */,
+				B10000000000000000000022 /* PluginScriptRuntime.swift */,
 				B1000000000000000000001D /* DictionaryPlugins.swift */,
 				B1000000000000000000001E /* MathExpressionPlugin.swift */,
 				B10000000000000000000013 /* CodeDetector.swift */,
@@ -314,6 +317,7 @@
 				A10000000000000000000019 /* PluginReferenceWindow.swift in Sources */,
 				A1000000000000000000001A /* AppLocalization.swift in Sources */,
 				A1000000000000000000001B /* DeclarativePlugin.swift in Sources */,
+				A1000000000000000000001C /* PluginScriptRuntime.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

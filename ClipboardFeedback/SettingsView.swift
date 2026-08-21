@@ -474,8 +474,8 @@ private struct DetectionSettingsView: View {
                         Text(t("Import a CopyThat plugin", "导入 CopyThat 插件"))
                             .font(.system(size: 14, weight: .medium))
                         Text(t(
-                            "Choose a .copythatplugin file. Imported plugins are data-only HTTPS actions and never run third-party code.",
-                            "选择 .copythatplugin 文件。导入插件只包含 HTTPS 操作数据，不会运行第三方代码。"
+                            "Choose a .copythatplugin file. Plugins use a permission-checked Host API and run only after you click their button.",
+                            "选择 .copythatplugin 文件。插件通过权限受控的 Host API 工作，只有点击按钮后才会运行。"
                         ))
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -689,7 +689,9 @@ private struct DetectionSettingsView: View {
 
         guard panel.runModal() == .OK, let sourceURL = panel.url else { return }
         do {
-            let plugin = try settings.installDeclarativePlugin(from: sourceURL)
+            let prepared = try settings.prepareDeclarativePluginInstall(from: sourceURL)
+            guard confirmPermissions(for: prepared.manifest) else { return }
+            let plugin = try settings.installPreparedDeclarativePlugin(prepared)
             pluginMessage = t(
                 "Installed \(plugin.displayName(in: settings.resolvedLocale)).",
                 "已安装 \(plugin.displayName(in: settings.resolvedLocale))。"
@@ -700,6 +702,38 @@ private struct DetectionSettingsView: View {
                 "无法安装插件：\(error.localizedDescription)"
             )
         }
+    }
+
+    private func confirmPermissions(
+        for plugin: DeclarativePluginManifest
+    ) -> Bool {
+        let permissions = plugin.permissions ?? []
+        let runsScript = plugin.action.type == .runScript
+        guard runsScript || !permissions.isEmpty else { return true }
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = t(
+            "Allow \(plugin.displayName(in: settings.resolvedLocale))?",
+            "允许“\(plugin.displayName(in: settings.resolvedLocale))”吗？"
+        )
+        let permissionList = permissions
+            .map { "• \($0.title(in: settings.resolvedLocale))" }
+            .joined(separator: "\n")
+        if permissions.isEmpty {
+            alert.informativeText = t(
+                "This plugin contains restricted JavaScript. Install it only if you trust its source. Plugin code runs only after you click its HUD button.",
+                "此插件包含受限 JavaScript。请只安装来源可信的插件。插件代码只有在你点击浮窗按钮后才会运行。"
+            )
+        } else {
+            alert.informativeText = t(
+                "This plugin contains restricted JavaScript and requests:\n\(permissionList)\n\nInstall it only if you trust its source. Plugin code runs only after you click its HUD button.",
+                "此插件包含受限 JavaScript，并请求以下权限：\n\(permissionList)\n\n请只安装来源可信的插件。插件代码只有在你点击浮窗按钮后才会运行。"
+            )
+        }
+        alert.addButton(withTitle: t("Install", "安装"))
+        alert.addButton(withTitle: t("Cancel", "取消"))
+        return alert.runModal() == .alertFirstButtonReturn
     }
 
     private func uninstall(_ plugin: DeclarativePluginManifest) {

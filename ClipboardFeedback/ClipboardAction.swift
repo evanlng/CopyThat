@@ -13,6 +13,7 @@ enum ClipboardActionTarget: Equatable {
     case formatCode(language: CodeLanguage, source: String)
     case copyText(String)
     case showReference(ClipboardReference)
+    case runPlugin(PluginScriptInvocation)
 }
 
 struct ClipboardReference: Equatable {

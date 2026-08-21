@@ -1,12 +1,16 @@
 import AppKit
 import Foundation
+import JavaScriptCore
 
-/// A small, data-only plugin format. Imported plugins can contribute one HTTPS
-/// action, but cannot load code, start a service, or inspect the clipboard.
+/// A versioned plugin manifest. Schema v1 remains a data-only HTTPS action.
+/// Schema v2 may run bounded JavaScript after an explicit user click. The
+/// script receives no system APIs except permission-checked Host API bridges.
 struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
+    static let currentHostAPIVersion = 1
     static let maximumFileSize = 64 * 1_024
     static let maximumInstalledPlugins = 32
+    static let maximumScriptCharacters = 32_000
 
     let schemaVersion: Int
     let identifier: String
@@ -15,6 +19,9 @@ struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
     let systemImage: String
     let matches: [DeclarativePluginContentKind]
     let action: DeclarativePluginAction
+    let minimumHostAPIVersion: Int?
+    let permissions: [DeclarativePluginPermission]?
+    let script: String?
 
     var id: String { identifier }
 
@@ -37,16 +44,34 @@ struct DeclarativePluginManifest: Codable, Equatable, Identifiable {
         locale: InterfaceLocale
     ) -> ClipboardActionDescriptor? {
         guard let input = content.declarativePluginInput,
-              matches.contains(input.kind),
-              let url = action.url(for: input.value) else {
+              matches.contains(input.kind) else {
             return nil
         }
 
-        return ClipboardActionDescriptor(
-            title: action.title.value(in: locale),
-            systemImage: resolvedSystemImage,
-            target: .external(.openDefault(url))
-        )
+        switch action.type {
+        case .openURL:
+            guard let value = input.textValue,
+                  let url = action.url(for: value) else { return nil }
+            return ClipboardActionDescriptor(
+                title: action.title.value(in: locale),
+                systemImage: resolvedSystemImage,
+                target: .external(.openDefault(url))
+            )
+        case .runScript:
+            guard let script else { return nil }
+            return ClipboardActionDescriptor(
+                title: action.title.value(in: locale),
+                systemImage: resolvedSystemImage,
+                target: .runPlugin(
+                    PluginScriptInvocation(
+                        identifier: identifier,
+                        script: script,
+                        permissions: Set(permissions ?? []),
+                        content: input
+                    )
+                )
+            )
+        }
     }
 }
 
@@ -78,21 +103,52 @@ enum DeclarativePluginContentKind: String, Codable, CaseIterable {
     case phoneNumber
     case emailAddress
     case code
+    case files
+    case image
+    case other
+}
+
+enum DeclarativePluginPermission: String, Codable, CaseIterable, Hashable {
+    case readText = "clipboard.readText"
+    case readImage = "clipboard.readImage"
+    case readFiles = "clipboard.readFiles"
+    case writeText = "clipboard.writeText"
+    case openApplication = "system.openApplication"
+    case openHTTPS = "network.openHTTPS"
+
+    func title(in locale: InterfaceLocale) -> String {
+        switch self {
+        case .readText:
+            return L10n.text("Read copied text", "读取复制的文字", locale: locale)
+        case .readImage:
+            return L10n.text("Read the copied image", "读取复制的图片", locale: locale)
+        case .readFiles:
+            return L10n.text("Read copied Finder files", "读取从访达复制的文件", locale: locale)
+        case .writeText:
+            return L10n.text("Write text to the clipboard", "将文字写入剪贴板", locale: locale)
+        case .openApplication:
+            return L10n.text("Open an installed application", "打开已安装的应用", locale: locale)
+        case .openHTTPS:
+            return L10n.text("Open an HTTPS address", "打开 HTTPS 地址", locale: locale)
+        }
+    }
 }
 
 struct DeclarativePluginAction: Codable, Equatable {
     enum ActionType: String, Codable {
         case openURL
+        case runScript
     }
 
     let type: ActionType
     let title: LocalizedPluginText
-    let urlTemplate: String
+    let urlTemplate: String?
 
     func url(for content: String) -> URL? {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed.count <= 1_000,
               type == .openURL,
+              let urlTemplate,
               var components = URLComponents(string: urlTemplate),
               components.scheme?.lowercased() == "https",
               components.host?.isEmpty == false,
@@ -128,6 +184,10 @@ enum DeclarativePluginValidationError: LocalizedError, Equatable {
     case invalidSymbol
     case invalidMatches
     case unsafeURLTemplate
+    case unsupportedHostAPI
+    case invalidPermissions
+    case invalidScript
+    case invalidAction
     case tooManyPlugins
 
     var errorDescription: String? {
@@ -148,6 +208,14 @@ enum DeclarativePluginValidationError: LocalizedError, Equatable {
             return "The plugin must select between one and four supported content types."
         case .unsafeURLTemplate:
             return "The action must be an HTTPS URL with one {content} placeholder in a query value."
+        case .unsupportedHostAPI:
+            return "This plugin requires a newer CopyThat Host API."
+        case .invalidPermissions:
+            return "The plugin contains invalid or duplicate permissions."
+        case .invalidScript:
+            return "The plugin script is missing or exceeds the 32,000-character limit."
+        case .invalidAction:
+            return "The plugin action is not valid for its schema version."
         case .tooManyPlugins:
             return "CopyThat supports up to 32 imported plugins."
         }
@@ -181,7 +249,8 @@ enum DeclarativePluginCodec {
     }
 
     private static func validate(_ manifest: DeclarativePluginManifest) throws {
-        guard manifest.schemaVersion == DeclarativePluginManifest.currentSchemaVersion else {
+        guard (1...DeclarativePluginManifest.currentSchemaVersion)
+            .contains(manifest.schemaVersion) else {
             throw DeclarativePluginValidationError.unsupportedVersion
         }
 
@@ -217,19 +286,57 @@ enum DeclarativePluginCodec {
             throw DeclarativePluginValidationError.invalidMatches
         }
 
-        let template = manifest.action.urlTemplate
-        guard template.count <= 2_048,
-              template.components(separatedBy: "{content}").count == 2,
-              let components = URLComponents(string: template),
-              components.scheme?.lowercased() == "https",
-              components.host?.isEmpty == false,
-              components.user == nil,
-              components.password == nil,
-              !components.path.contains("{content}"),
-              components.host?.contains("{content}") == false,
-              components.fragment?.contains("{content}") != true,
-              manifest.action.url(for: "validation") != nil else {
-            throw DeclarativePluginValidationError.unsafeURLTemplate
+        if manifest.schemaVersion == 1 {
+            guard manifest.action.type == .openURL,
+                  manifest.minimumHostAPIVersion == nil,
+                  manifest.permissions == nil,
+                  manifest.script == nil,
+                  !manifest.matches.contains(.files),
+                  !manifest.matches.contains(.image),
+                  !manifest.matches.contains(.other) else {
+                throw DeclarativePluginValidationError.invalidAction
+            }
+        } else {
+            guard manifest.action.type == .runScript,
+                  let minimumHostAPIVersion = manifest.minimumHostAPIVersion,
+                  (1...DeclarativePluginManifest.currentHostAPIVersion)
+                    .contains(minimumHostAPIVersion) else {
+                throw DeclarativePluginValidationError.unsupportedHostAPI
+            }
+            let permissions = manifest.permissions ?? []
+            guard permissions.count <= DeclarativePluginPermission.allCases.count,
+                  Set(permissions).count == permissions.count else {
+                throw DeclarativePluginValidationError.invalidPermissions
+            }
+        }
+
+        switch manifest.action.type {
+        case .openURL:
+            guard manifest.script == nil,
+                  let template = manifest.action.urlTemplate,
+                  template.count <= 2_048,
+                  template.components(separatedBy: "{content}").count == 2,
+                  let components = URLComponents(string: template),
+                  components.scheme?.lowercased() == "https",
+                  components.host?.isEmpty == false,
+                  components.user == nil,
+                  components.password == nil,
+                  !components.path.contains("{content}"),
+                  components.host?.contains("{content}") == false,
+                  components.fragment?.contains("{content}") != true,
+                  manifest.action.url(for: "validation") != nil else {
+                throw DeclarativePluginValidationError.unsafeURLTemplate
+            }
+        case .runScript:
+            guard manifest.schemaVersion >= 2,
+                  manifest.action.urlTemplate == nil,
+                  let script = manifest.script?.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                  ),
+                  !script.isEmpty,
+                  script.count <= DeclarativePluginManifest.maximumScriptCharacters else {
+                throw DeclarativePluginValidationError.invalidScript
+            }
         }
     }
 
@@ -247,27 +354,61 @@ enum DeclarativePluginCodec {
     }
 }
 
+struct PluginContentInput: Equatable {
+    let kind: DeclarativePluginContentKind
+    let textValue: String?
+    let fileURLs: [URL]
+    let pasteboardChangeCount: Int?
+
+    init(
+        kind: DeclarativePluginContentKind,
+        textValue: String?,
+        fileURLs: [URL] = [],
+        pasteboardChangeCount: Int? = nil
+    ) {
+        self.kind = kind
+        self.textValue = textValue
+        self.fileURLs = fileURLs
+        self.pasteboardChangeCount = pasteboardChangeCount
+    }
+}
+
+struct PluginScriptInvocation: Equatable {
+    let identifier: String
+    let script: String
+    let permissions: Set<DeclarativePluginPermission>
+    let content: PluginContentInput
+}
+
 private extension ClipboardContent {
-    var declarativePluginInput: (kind: DeclarativePluginContentKind, value: String)? {
+    var declarativePluginInput: PluginContentInput? {
         switch self {
         case .text(let text):
-            return (.text, text)
+            return PluginContentInput(kind: .text, textValue: text)
         case .calculation(_, let result):
-            return (.calculation, result)
+            return PluginContentInput(kind: .calculation, textValue: result)
         case .englishWord(let word, _):
-            return (.englishWord, word)
+            return PluginContentInput(kind: .englishWord, textValue: word)
         case .chineseCharacter(let character, _, _):
-            return (.chineseCharacter, character)
+            return PluginContentInput(kind: .chineseCharacter, textValue: character)
         case .link(let url):
-            return (.link, url.absoluteString)
+            return PluginContentInput(kind: .link, textValue: url.absoluteString)
         case .phoneNumber(_, let normalized):
-            return (.phoneNumber, normalized)
+            return PluginContentInput(kind: .phoneNumber, textValue: normalized)
         case .emailAddress(let email):
-            return (.emailAddress, email)
+            return PluginContentInput(kind: .emailAddress, textValue: email)
         case .code(_, let preview, let source):
-            return (.code, source ?? preview)
-        case .files, .image, .other:
-            return nil
+            return PluginContentInput(kind: .code, textValue: source ?? preview)
+        case .files(let urls, _):
+            return PluginContentInput(kind: .files, textValue: nil, fileURLs: urls)
+        case .image:
+            return PluginContentInput(
+                kind: .image,
+                textValue: nil,
+                pasteboardChangeCount: NSPasteboard.general.changeCount
+            )
+        case .other:
+            return PluginContentInput(kind: .other, textValue: nil)
         }
     }
 }

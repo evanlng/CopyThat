@@ -42,17 +42,20 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **中英文界面**：默认跟随 macOS 系统语言，也可在设置中固定为简体中文或 English，立即生效。
 - **插件安装管理**：内置插件可暂停、删除及重新安装；也可从“插件”设置页导入轻量的 `.copythatplugin` 操作插件。
 
-### 2.2 外部插件安装入口
+### 外部插件安装与 Host API
 
-2.2 在“插件”设置页增加 **安装插件…**。当前外部插件是一份最大 64 KB 的
-JSON 清单，只能声明“匹配哪些内容”和“用户点击按钮后打开哪个 HTTPS 地址”。
-它不能包含或执行 Swift、脚本、动态库和后台服务，也不会获得剪贴板读取权限。
+2.2 在“插件”设置页增加了 **安装插件…**。原有 schema v1 插件继续作为纯数据
+HTTPS 操作使用。新的 schema v2 插件平台提供受限 JavaScript 和带版本、权限检查的
+Host API，让插件可以组合已开放的剪贴板及系统操作，而不需要重新构建 CopyThat。
+Swift、动态库、Shell、辅助进程和后台服务仍然不受支持。
 
 安装时 CopyThat 会检查格式版本、反向域名标识符、文字长度、内容类型，以及 URL
 是否为 HTTPS。`{content}` 只能放在一个查询参数值里，并由系统安全编码。插件只在
 剪贴板变化后对已分析好的短内容匹配一次；空闲时不扫描插件目录、不轮询，也不联网。
 
 仓库中的 [`OpenInMaps.copythatplugin`](Examples/OpenInMaps.copythatplugin) 是可直接导入的示例。
+[`EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin) 展示了图片插件：
+它通过 Host API 请求使用 macOS“预览”打开复制的图片。
 多个外部插件同时匹配时，列表中排在最前且已启用的插件提供浮窗按钮；最新安装的排在最前。
 
 ### 2.1 多语言与插件管理
@@ -168,13 +171,14 @@ assistant that recognizes the copied content and offers the most useful next act
 - **English and Chinese UI**: follows the macOS language by default, or can be fixed to Simplified Chinese or English with immediate updates.
 - **Plugin installation controls**: built-in plugins can be paused, removed, and reinstalled; lightweight `.copythatplugin` action manifests can also be imported from the Plugins settings page.
 
-### 2.2 external plugin installation
+### External plugin installation and Host API
 
-CopyThat 2.2 adds **Install Plugin…** to the Plugins settings page. An external
-plugin is a JSON manifest no larger than 64 KB. It can only declare which content
-types it matches and an HTTPS URL to open after the user clicks its HUD button.
-It cannot contain or execute Swift, scripts, dynamic libraries, or background services,
-and it receives no direct clipboard access.
+CopyThat 2.2 added **Install Plugin…** to the Plugins settings page. Existing
+schema-v1 plugins remain data-only HTTPS actions. The next schema-v2 plugin
+platform adds restricted JavaScript plus a versioned, permission-checked Host
+API, allowing plugins to combine supported clipboard and system actions without
+rebuilding CopyThat. Swift, dynamic libraries, shell commands, helpers, and
+background services remain unsupported.
 
 CopyThat validates the schema version, reverse-domain identifier, text lengths,
 content types, and HTTPS template during installation. `{content}` is permitted in
@@ -183,6 +187,8 @@ analyzed short content once after a clipboard update; there is no idle directory
 polling, network request, or helper process.
 
 [`OpenInMaps.copythatplugin`](Examples/OpenInMaps.copythatplugin) is an importable example.
+[`EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin) demonstrates
+an image plugin that asks the Host API to open the copied image in macOS Preview.
 When multiple imported plugins match, the first enabled one in the list supplies the HUD action;
 the most recently installed plugin appears first.
 

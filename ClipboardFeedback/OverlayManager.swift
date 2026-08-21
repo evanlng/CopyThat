@@ -139,10 +139,30 @@ final class OverlayManager {
                 reference,
                 locale: SettingsManager.shared.resolvedLocale
             )
+        case .runPlugin(let invocation):
+            do {
+                try PluginScriptRuntime.perform(invocation)
+            } catch {
+                showPluginError(error)
+            }
         case .external:
             ClipboardActionExecutor.perform(action)
         }
         dismiss()
+    }
+
+    private func showPluginError(_ error: Error) {
+        let locale = SettingsManager.shared.resolvedLocale
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = L10n.text(
+            "Plugin Action Failed",
+            "插件操作失败",
+            locale: locale
+        )
+        alert.informativeText = error.localizedDescription
+        alert.addButton(withTitle: L10n.text("OK", "好", locale: locale))
+        alert.runModal()
     }
 
     private func makePanel() -> OverlayPanel {

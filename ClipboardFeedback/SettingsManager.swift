@@ -1,6 +1,11 @@
 import Foundation
 import ServiceManagement
 
+struct PreparedDeclarativePluginInstall {
+    let manifest: DeclarativePluginManifest
+    let canonicalData: Data
+}
+
 @MainActor
 final class SettingsManager: ObservableObject {
     static let shared = SettingsManager()
@@ -262,6 +267,14 @@ final class SettingsManager: ObservableObject {
 
     @discardableResult
     func installDeclarativePlugin(from sourceURL: URL) throws -> DeclarativePluginManifest {
+        try installPreparedDeclarativePlugin(
+            prepareDeclarativePluginInstall(from: sourceURL)
+        )
+    }
+
+    func prepareDeclarativePluginInstall(
+        from sourceURL: URL
+    ) throws -> PreparedDeclarativePluginInstall {
         let didAccess = sourceURL.startAccessingSecurityScopedResource()
         defer {
             if didAccess {
@@ -277,6 +290,17 @@ final class SettingsManager: ObservableObject {
 
         let data = try Data(contentsOf: sourceURL, options: .mappedIfSafe)
         let manifest = try DeclarativePluginCodec.decodeAndValidate(data)
+        return PreparedDeclarativePluginInstall(
+            manifest: manifest,
+            canonicalData: try DeclarativePluginCodec.encoded(manifest)
+        )
+    }
+
+    @discardableResult
+    func installPreparedDeclarativePlugin(
+        _ prepared: PreparedDeclarativePluginInstall
+    ) throws -> DeclarativePluginManifest {
+        let manifest = prepared.manifest
         let isUpdate = installedDeclarativePlugins.contains {
             $0.identifier == manifest.identifier
         }
@@ -284,13 +308,11 @@ final class SettingsManager: ObservableObject {
             < DeclarativePluginManifest.maximumInstalledPlugins else {
             throw DeclarativePluginValidationError.tooManyPlugins
         }
-        let canonicalData = try DeclarativePluginCodec.encoded(manifest)
-
         try FileManager.default.createDirectory(
             at: declarativePluginDirectory,
             withIntermediateDirectories: true
         )
-        try canonicalData.write(
+        try prepared.canonicalData.write(
             to: declarativePluginURL(for: manifest.identifier),
             options: .atomic
         )
