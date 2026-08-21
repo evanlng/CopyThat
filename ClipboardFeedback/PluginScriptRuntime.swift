@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import JavaScriptCore
+import UniformTypeIdentifiers
 
 enum PluginRuntimeError: LocalizedError, Equatable {
     case unavailable
@@ -178,7 +179,26 @@ private enum CopiedContentApplicationBridge {
             urls = [try materializeCurrentImage(
                 expectedChangeCount: content.pasteboardChangeCount
             )]
-        case .files, .imageFiles:
+        case .imageFiles:
+            try require(.readFiles, in: permissions)
+            guard !content.fileURLs.isEmpty else {
+                throw PluginRuntimeError.invalidArgument
+            }
+            // Finder publishes a TIFF representation for a copied image file.
+            // Prefer that sandbox-safe representation because the file URL does
+            // not carry a lasting sandbox extension once it reaches the plugin.
+            if let data = content.imageData,
+               let fileExtension = content.imageFileExtension {
+                urls = [try writeTemporary(data, fileExtension: fileExtension)]
+            } else if content.fileURLs.count == 1,
+               let imageURL = try? materializeCurrentImage(
+                   expectedChangeCount: content.pasteboardChangeCount
+               ) {
+                urls = [imageURL]
+            } else {
+                urls = try content.fileURLs.prefix(20).map(materializeImageFile)
+            }
+        case .files:
             try require(.readFiles, in: permissions)
             guard !content.fileURLs.isEmpty else {
                 throw PluginRuntimeError.invalidArgument
@@ -199,11 +219,14 @@ private enum CopiedContentApplicationBridge {
 
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
+        let accessedURLs = urls.filter { $0.startAccessingSecurityScopedResource() }
         workspace.open(
             urls,
             withApplicationAt: applicationURL,
             configuration: configuration,
-            completionHandler: nil
+            completionHandler: { _, _ in
+                accessedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+            }
         )
     }
 
@@ -229,6 +252,24 @@ private enum CopiedContentApplicationBridge {
         }
         let fileExtension = type == .png ? "png" : "tiff"
         return try writeTemporary(data, fileExtension: fileExtension)
+    }
+
+    private static func materializeImageFile(_ sourceURL: URL) throws -> URL {
+        guard sourceURL.isFileURL,
+              let type = UTType(filenameExtension: sourceURL.pathExtension),
+              type.conforms(to: .image) else {
+            throw PluginRuntimeError.invalidArgument
+        }
+
+        let didAccess = sourceURL.startAccessingSecurityScopedResource()
+        defer {
+            if didAccess { sourceURL.stopAccessingSecurityScopedResource() }
+        }
+        let data = try Data(contentsOf: sourceURL, options: .mappedIfSafe)
+        guard !data.isEmpty, data.count <= maximumImageBytes else {
+            throw PluginRuntimeError.imageUnavailable
+        }
+        return try writeTemporary(data, fileExtension: sourceURL.pathExtension)
     }
 
     private static func materializeText(_ text: String) throws -> URL {

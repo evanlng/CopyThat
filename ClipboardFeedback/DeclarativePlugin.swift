@@ -375,17 +375,23 @@ struct PluginContentInput: Equatable {
     let textValue: String?
     let fileURLs: [URL]
     let pasteboardChangeCount: Int?
+    let imageData: Data?
+    let imageFileExtension: String?
 
     init(
         kind: DeclarativePluginContentKind,
         textValue: String?,
         fileURLs: [URL] = [],
-        pasteboardChangeCount: Int? = nil
+        pasteboardChangeCount: Int? = nil,
+        imageData: Data? = nil,
+        imageFileExtension: String? = nil
     ) {
         self.kind = kind
         self.textValue = textValue
         self.fileURLs = fileURLs
         self.pasteboardChangeCount = pasteboardChangeCount
+        self.imageData = imageData
+        self.imageFileExtension = imageFileExtension
     }
 }
 
@@ -419,7 +425,17 @@ private extension ClipboardContent {
             let kind: DeclarativePluginContentKind = urls.allSatisfy(isImageFile)
                 ? .imageFiles
                 : .files
-            return PluginContentInput(kind: kind, textValue: nil, fileURLs: urls)
+            let capturedImage = kind == .imageFiles && urls.count == 1
+                ? pasteboardImageRepresentation()
+                : nil
+            return PluginContentInput(
+                kind: kind,
+                textValue: nil,
+                fileURLs: urls,
+                pasteboardChangeCount: NSPasteboard.general.changeCount,
+                imageData: capturedImage?.data,
+                imageFileExtension: capturedImage?.fileExtension
+            )
         case .image:
             return PluginContentInput(
                 kind: .image,
@@ -437,5 +453,19 @@ private extension ClipboardContent {
             return false
         }
         return type.conforms(to: .image)
+    }
+
+    private func pasteboardImageRepresentation() -> (
+        data: Data,
+        fileExtension: String
+    )? {
+        let pasteboard = NSPasteboard.general
+        guard let type = pasteboard.availableType(from: [.png, .tiff]),
+              let data = pasteboard.data(forType: type),
+              !data.isEmpty,
+              data.count <= 100 * 1_024 * 1_024 else {
+            return nil
+        }
+        return (data, type == .png ? "png" : "tiff")
     }
 }

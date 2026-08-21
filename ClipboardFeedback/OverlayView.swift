@@ -85,28 +85,31 @@ struct OverlayView: View {
                         .foregroundStyle(.primary)
 
                     Spacer(minLength: 8)
+                }
 
-                    if !actions.isEmpty {
-                        HStack(spacing: 6) {
-                            ForEach(Array(actions.prefix(2))) { action in
-                                Button {
-                                    performAction(action)
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: action.systemImage)
-                                            .font(.system(size: 10, weight: .semibold))
-                                        Text(action.title)
-                                    }
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(statusColor.opacity(0.13), in: Capsule())
+                if !actions.isEmpty {
+                    HStack(spacing: 6) {
+                        Spacer(minLength: 0)
+                        ForEach(Array(actions.prefix(2))) { action in
+                            Button {
+                                performAction(action)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: action.systemImage)
+                                        .font(.system(size: 10, weight: .semibold))
+                                    Text(action.title)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.85)
                                 }
-                                .buttonStyle(.plain)
-                                .foregroundStyle(statusColor)
-                                .help(action.title)
-                                .accessibilityLabel(action.title)
+                                .font(.system(size: 12, weight: .semibold))
+                                .frame(width: 142)
+                                .padding(.vertical, 6)
+                                .background(statusColor.opacity(0.13), in: Capsule())
                             }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(statusColor)
+                            .help(action.title)
+                            .accessibilityLabel(action.title)
                         }
                     }
                 }
