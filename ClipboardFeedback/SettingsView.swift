@@ -969,7 +969,7 @@ private struct AboutSettingsView: View {
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "2.2.1"
+            ?? "3.0.0"
     }
 
     private func t(_ english: String, _ chinese: String) -> String {

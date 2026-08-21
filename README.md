@@ -1,4 +1,4 @@
-# CopyThat（牛马）2.2.1
+# CopyThat（牛马）3.0.0
 
 ![CopyThat — 复制成功，一眼确认](marketing/CopyThat-Hero.png)
 
@@ -41,6 +41,16 @@ CopyThat 最初只想解决这一件事：当系统剪贴板成功更新时，�
 - **插件开关**：内容识别和操作按钮都是独立插件，可在设置中分别启用或关闭。
 - **中英文界面**：默认跟随 macOS 系统语言，也可在设置中固定为简体中文或 English，立即生效。
 - **插件安装管理**：内置插件可暂停、删除及重新安装；也可从“插件”设置页导入轻量的 `.copythatplugin` 操作插件。
+
+### 3.0 统一插件接口
+
+3.0 将可安装插件升级为带版本的 CopyThat Host API。主程序统一负责权限检查、
+剪贴板内容访问、临时文件和系统 App 调用；插件只声明匹配类型、申请权限并组合
+Host API，不再需要为 Preview、编辑器或其他具体工作流修改 HUD 与主流程。
+
+schema v2 插件可以包含受限 JavaScript，但只有用户点击插件按钮后才运行；安装前
+CopyThat 会展示脚本与权限警告，每次调用 Host API 时还会再次检查。schema v1
+HTTPS 插件继续兼容。
 
 ### 外部插件安装与 Host API
 
@@ -170,6 +180,18 @@ assistant that recognizes the copied content and offers the most useful next act
 - **Plugin controls**: content detectors and action buttons can be enabled independently.
 - **English and Chinese UI**: follows the macOS language by default, or can be fixed to Simplified Chinese or English with immediate updates.
 - **Plugin installation controls**: built-in plugins can be paused, removed, and reinstalled; lightweight `.copythatplugin` action manifests can also be imported from the Plugins settings page.
+
+### 3.0 unified plugin interface
+
+CopyThat 3.0 introduces a versioned Host API for installable plugins. The host
+uniformly owns permission checks, clipboard access, temporary files, and system
+application handoff. Plugins declare matches and permissions, then compose Host
+API capabilities without changing the HUD or central application flow.
+
+Schema-v2 plugins may contain restricted JavaScript, but it runs only after the
+user clicks the plugin button. CopyThat shows code and permission warnings before
+installation and checks permissions again on every Host API call. Schema-v1
+HTTPS plugins remain compatible.
 
 ### External plugin installation and Host API
 
