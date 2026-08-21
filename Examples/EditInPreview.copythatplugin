@@ -1,21 +1,23 @@
 {
   "schemaVersion": 2,
-  "minimumHostAPIVersion": 1,
+  "minimumHostAPIVersion": 2,
   "identifier": "com.copythat.example.edit-in-preview",
   "name": {
     "en": "Edit in Preview",
     "zh-Hans": "在预览中编辑"
   },
   "description": {
-    "en": "Open the copied image in the macOS Preview app.",
-    "zh-Hans": "使用 macOS 预览 App 打开并编辑复制的图片。"
+    "en": "Open copied images and Finder image files in the macOS Preview app.",
+    "zh-Hans": "使用 macOS“预览”打开复制的图片或从访达复制的图片文件。"
   },
   "systemImage": "pencil.and.scribble",
   "matches": [
-    "image"
+    "image",
+    "imageFiles"
   ],
   "permissions": [
     "clipboard.readImage",
+    "clipboard.readFiles",
     "system.openApplication"
   ],
   "action": {

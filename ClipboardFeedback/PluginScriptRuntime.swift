@@ -176,9 +176,7 @@ private enum CopiedContentApplicationBridge {
         switch content.kind {
         case .image:
             try require(.readImage, in: permissions)
-            urls = [try materializeCurrentImage(
-                expectedChangeCount: content.pasteboardChangeCount
-            )]
+            urls = [try materializeClipboardImage(content)]
         case .imageFiles:
             try require(.readFiles, in: permissions)
             guard !content.fileURLs.isEmpty else {
@@ -187,13 +185,8 @@ private enum CopiedContentApplicationBridge {
             // Finder publishes a TIFF representation for a copied image file.
             // Prefer that sandbox-safe representation because the file URL does
             // not carry a lasting sandbox extension once it reaches the plugin.
-            if let data = content.imageData,
-               let fileExtension = content.imageFileExtension {
-                urls = [try writeTemporary(data, fileExtension: fileExtension)]
-            } else if content.fileURLs.count == 1,
-               let imageURL = try? materializeCurrentImage(
-                   expectedChangeCount: content.pasteboardChangeCount
-               ) {
+            if content.fileURLs.count == 1,
+               let imageURL = try? materializeClipboardImage(content) {
                 urls = [imageURL]
             } else {
                 urls = try content.fileURLs.prefix(20).map(materializeImageFile)
@@ -252,6 +245,24 @@ private enum CopiedContentApplicationBridge {
         }
         let fileExtension = type == .png ? "png" : "tiff"
         return try writeTemporary(data, fileExtension: fileExtension)
+    }
+
+    private static func materializeClipboardImage(
+        _ content: PluginContentInput
+    ) throws -> URL {
+        if content.imageData != nil || content.imageFileExtension != nil {
+            guard let data = content.imageData,
+                  let fileExtension = content.imageFileExtension,
+                  ["png", "tiff"].contains(fileExtension),
+                  !data.isEmpty,
+                  data.count <= maximumImageBytes else {
+                throw PluginRuntimeError.imageUnavailable
+            }
+            return try writeTemporary(data, fileExtension: fileExtension)
+        }
+        return try materializeCurrentImage(
+            expectedChangeCount: content.pasteboardChangeCount
+        )
     }
 
     private static func materializeImageFile(_ sourceURL: URL) throws -> URL {

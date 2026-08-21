@@ -204,11 +204,11 @@ final class PluginArchitectureTests: XCTestCase {
             .appendingPathComponent("Examples/EditInPreview.copythatplugin"))
         let manifest = try DeclarativePluginCodec.decodeAndValidate(data)
         XCTAssertEqual(manifest.schemaVersion, 2)
-        XCTAssertEqual(manifest.minimumHostAPIVersion, 1)
-        XCTAssertEqual(manifest.matches, [.image])
+        XCTAssertEqual(manifest.minimumHostAPIVersion, 2)
+        XCTAssertEqual(manifest.matches, [.image, .imageFiles])
         XCTAssertEqual(
             Set(manifest.permissions ?? []),
-            [.readImage, .openApplication]
+            [.readImage, .readFiles, .openApplication]
         )
         XCTAssertEqual(manifest.action.type, .runScript)
     }
@@ -217,14 +217,14 @@ final class PluginArchitectureTests: XCTestCase {
         let data = try Data(contentsOf: URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("Examples/EditImageFileInPreview.copythatplugin"))
+            .appendingPathComponent("Examples/EditInPreview.copythatplugin"))
         let manifest = try DeclarativePluginCodec.decodeAndValidate(data)
         let url = URL(fileURLWithPath: "/tmp/example.heic")
         let content = ClipboardContent.files([url], totalCount: 1)
         let actions = content.actions(declarativePlugins: [manifest])
 
         XCTAssertEqual(manifest.minimumHostAPIVersion, 2)
-        XCTAssertEqual(manifest.matches, [.imageFiles])
+        XCTAssertEqual(manifest.matches, [.image, .imageFiles])
         XCTAssertEqual(actions.map(\.title), ["Edit in Preview", "Show in Finder"])
         guard case .runPlugin(let invocation) = actions.first?.target else {
             return XCTFail("Expected Preview plugin action")

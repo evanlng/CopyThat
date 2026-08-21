@@ -27,11 +27,12 @@ of truth for supported fields and values.
 ```json
 {
   "schemaVersion": 2,
-  "minimumHostAPIVersion": 1,
+  "minimumHostAPIVersion": 2,
   "identifier": "com.copythat.example.edit-in-preview",
-  "matches": ["image"],
+  "matches": ["image", "imageFiles"],
   "permissions": [
     "clipboard.readImage",
+    "clipboard.readFiles",
     "system.openApplication"
   ],
   "action": {
@@ -48,8 +49,7 @@ a recognised image format such as PNG, JPEG, HEIC, TIFF, GIF, or WebP. The HUD
 can show up to two applicable actions together, so an image-file plugin can sit
 beside the built-in **Show in Finder** action.
 
-The included [`EditImageFileInPreview.copythatplugin`](Examples/EditImageFileInPreview.copythatplugin)
-opens copied Finder image files in Preview and requires Host API v2.
+The same included plugin opens copied Finder image files in Preview through Host API v2.
 
 Host API functions:
 
@@ -142,11 +142,9 @@ CopyThat 2.2 还支持只包含数据的 schema v1 `.copythatplugin` 操作清�
 新的 schema v2 插件可以包含受限 JavaScript，并通过 CopyThat Host API v2 调用
 经过权限检查的通用能力。脚本只有在用户点击插件按钮后才运行，无法直接访问 AppKit、
 文件系统、进程、网络或剪贴板。安装时会显示插件申请的权限，每次调用 Host API 时
-主程序还会再次检查。直接复制图片的编辑示例见
-[`Examples/EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin)。
-从访达复制 PNG、JPEG、HEIC、TIFF、GIF、WebP 等图片文件时，可导入
-[`Examples/EditImageFileInPreview.copythatplugin`](Examples/EditImageFileInPreview.copythatplugin)；
-它会和内置“在访达中显示”同时出现，方便选择。
+主程序还会再次检查。[`Examples/EditInPreview.copythatplugin`](Examples/EditInPreview.copythatplugin)
+统一支持直接复制的图片，以及从访达复制的 PNG、JPEG、HEIC、TIFF、GIF、WebP
+等图片文件；后者会和内置“在访达中显示”同时出现，方便选择。
 
 Host API v2 的 JavaScriptCore 仍在主进程内运行，因此只应安装可信插件；死循环脚本
 仍可能让 App 暂时失去响应。后续可把执行器迁移到可终止的 XPC 进程，同时保持插件接口版本兼容。
